@@ -1,12 +1,12 @@
 {
-  "name": "team-451-cyborgDB",
+  "name": "team-psyducks-cyborgdb-hackathon",
   "version": "1.0.0",
-  "description": "A secure Node.js/Express backend implementing Google OAuth 2.0 authentication with JWT token management and PostgreSQL database integration",
-  "type": "commonjs",
+  "description": "team psyduck's submission for the cyborgdb hackathon 2025",
+  "type": "module",
   "main": "dist/index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/arpan-lol/Google-Oauth-JWT-Backend.git"
+    "url": "https://github.com/arpan-lol/cyborg-db.git"
   },
   "author": "Arpan <arpantaneja14@gmail.com>",
   "license": "MIT",

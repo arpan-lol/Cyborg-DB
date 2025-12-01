@@ -2,7 +2,7 @@ import { Router } from 'express';
 import prisma from '../prisma/client';
 import { googleClient, GOOGLE_CLIENT_ID } from '../utils/googleClient';
 import { signJwt, verifyJwt, decodeJwt } from '../utils/jwt';
-import { authenticateJWT } from '../middleware/authenticate'
+import verifyAuth from '../middleware/auth'
 
 import { Response } from 'express';
 import { AuthRequest } from '../types/express';
@@ -125,7 +125,7 @@ router.post('/refresh', async (req, res) => {
 });
 
 
-router.post('/logout', authenticateJWT, async (req: AuthRequest, res: Response) => {
+router.post('/logout', verifyAuth, async (req: AuthRequest, res: Response) => {
   const userId = req.user?.userId;
   if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
@@ -142,7 +142,7 @@ router.post('/logout', authenticateJWT, async (req: AuthRequest, res: Response) 
   }
 });
 
-router.get('/me', authenticateJWT, async (req: AuthRequest, res: Response) => {
+router.get('/me', verifyAuth, async (req: AuthRequest, res: Response) => {
   if (!req.user) {
     return res.status(401).json({ message: 'Unauthorized' });
   }

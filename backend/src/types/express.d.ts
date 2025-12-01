@@ -7,4 +7,5 @@ export interface AuthRequest extends Request {
     name?: string;
     picture?: string;
   };
+  file?: Express.Multer.File;
 }

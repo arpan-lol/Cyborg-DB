@@ -1,0 +1,26 @@
+{
+  "name": "team-psyducks-cyborgdb-backend",
+  "version": "1.0.0",
+  "description": "Our submission for the cyborgdb 2025 hackathon",
+  "main": "index.js",
+  "scripts": {
+    "start": "node dist/index.js",
+    "dev": "npx tsx src/index.ts",
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Ashish K. Chowdhary, Arpan Taneja, Pratham Gupta",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.1.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  }
+}
