@@ -2,7 +2,7 @@ import { Router } from 'express';
 import prisma from '../prisma/client';
 import { googleClient, GOOGLE_CLIENT_ID } from '../utils/googleClient';
 import { signJwt, verifyJwt, decodeJwt } from '../utils/jwt';
-import verifyAuth from '../middleware/auth'
+import { authenticateJWT } from '../middleware/auth'
 
 import { Response } from 'express';
 import { AuthRequest } from '../types/express';
@@ -49,6 +49,12 @@ router.get('/google/callback', async (req, res) => {
       throw new Error('Invalid ID token');
     }
 
+    console.log('[auth] Google payload:', {
+      email: payload.email,
+      name: payload.name,
+      picture: payload.picture,
+      sub: payload.sub
+    });
     console.log('[auth] Upserting user:', payload.email);
     const user = await prisma.user.upsert({
       where: { googleId: payload.sub },
@@ -125,7 +131,7 @@ router.post('/refresh', async (req, res) => {
 });
 
 
-router.post('/logout', verifyAuth, async (req: AuthRequest, res: Response) => {
+router.post('/logout', authenticateJWT, async (req: AuthRequest, res: Response) => {
   const userId = req.user?.userId;
   if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
@@ -142,7 +148,7 @@ router.post('/logout', verifyAuth, async (req: AuthRequest, res: Response) => {
   }
 });
 
-router.get('/me', verifyAuth, async (req: AuthRequest, res: Response) => {
+router.get('/me', authenticateJWT, async (req: AuthRequest, res: Response) => {
   if (!req.user) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
