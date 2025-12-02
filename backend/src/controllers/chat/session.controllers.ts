@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../../types/express';
 import prisma from '../../prisma/client';
 import {
@@ -6,16 +6,19 @@ import {
   CreateSessionResponse,
   SessionDetails,
 } from '../../types/chat.types';
+import { logger } from '../../utils/logger.util';
+import { UnauthorizedError, NotFoundError, ProcessingError } from '../../types/error.types';
+import { IndexService } from 'src/services/cyborg/index.service';
 
 export class SessionController {
-  static async createSession(req: AuthRequest, res: Response): Promise<Response> {
+  static async createSession(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
     const userId = req.user?.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) throw new UnauthorizedError();
 
     const { title }: CreateSessionRequest = req.body;
 
     try {
-      const session = await prisma.chatSession.create({
+      const session = await prisma.session.create({
         data: {
           userId,
           title: title || 'New Chat',
@@ -30,21 +33,21 @@ export class SessionController {
 
       return res.status(201).json(response);
     } catch (error) {
-      console.error('[chat] Error creating session:', error);
-      return res.status(500).json({ error: 'Failed to create chat session' });
+      logger.error('SessionController', 'Error creating session', error instanceof Error ? error : undefined, { userId });
+      next(new ProcessingError('Failed to create chat session'));
     }
   }
 
-  static async getSessions(req: AuthRequest, res: Response): Promise<Response> {
+  static async getSessions(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
     const userId = req.user?.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) throw new UnauthorizedError();
 
     try {
-      const sessions = await prisma.chatSession.findMany({
+      const sessions = await prisma.session.findMany({
         where: { userId },
         orderBy: { updatedAt: 'desc' },
         include: {
-          messages: {
+          chats: {
             take: 1,
             orderBy: { createdAt: 'desc' },
           },
@@ -53,22 +56,22 @@ export class SessionController {
 
       return res.status(200).json({ sessions });
     } catch (error) {
-      console.error('[chat] Error fetching sessions:', error);
-      return res.status(500).json({ error: 'Failed to fetch sessions' });
+      logger.error('SessionController', 'Error fetching sessions', error instanceof Error ? error : undefined, { userId });
+      next(new ProcessingError('Failed to fetch sessions'));
     }
   }
 
-  static async getSessionById(req: AuthRequest, res: Response): Promise<Response> {
+  static async getSessionById(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
     const userId = req.user?.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) throw new UnauthorizedError();
 
     const { id } = req.params;
 
     try {
-      const session = await prisma.chatSession.findUnique({
+      const session = await prisma.session.findUnique({
         where: { id, userId },
         include: {
-          messages: {
+          chats: {
             orderBy: { createdAt: 'asc' },
             include: {
               attachments: true,
@@ -78,7 +81,7 @@ export class SessionController {
       });
 
       if (!session) {
-        return res.status(404).json({ error: 'Session not found' });
+        throw new NotFoundError('Session not found');
       }
 
       const response: SessionDetails = {
@@ -86,7 +89,7 @@ export class SessionController {
         title: session.title || undefined,
         createdAt: session.createdAt,
         updatedAt: session.updatedAt,
-        messages: session.messages.map((msg) => ({
+        messages: session.chats.map((msg) => ({
           id: msg.id,
           role: msg.role as 'user' | 'assistant' | 'system',
           content: msg.content,
@@ -106,44 +109,44 @@ export class SessionController {
 
       return res.status(200).json(response);
     } catch (error) {
-      console.error('[chat] Error fetching session:', error);
-      return res.status(500).json({ error: 'Failed to fetch session' });
+      logger.error('SessionController', 'Error fetching session', error instanceof Error ? error : undefined, { userId, sessionId: id });
+      if (error instanceof NotFoundError) throw error;
+      next(new ProcessingError('Failed to fetch session'));
     }
   }
 
-  static async deleteSession(req: AuthRequest, res: Response): Promise<Response> {
+  static async deleteSession(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
     const userId = req.user?.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) throw new UnauthorizedError();
 
     const { id } = req.params;
 
     try {
-      const session = await prisma.chatSession.findUnique({
+      const session = await prisma.session.findUnique({
         where: { id, userId },
       });
 
       if (!session) {
-        return res.status(404).json({ error: 'Session not found' });
+        throw new NotFoundError('Session not found');
       }
 
-      // Delete session from database (cascades to messages and attachments)
-      await prisma.chatSession.delete({
+      await prisma.session.delete({
         where: { id },
       });
 
-      CollectionService.deleteCollection(id)
+      IndexService.deleteIndex(id)
         .then(() => {
-          console.log(`[chat] ✅ Deleted vectors for session: ${id}`);
+          logger.info('SessionController', `Deleted vectors for session: ${id}`);
         })
         .catch((error: Error) => {
-          console.error(`[chat] ⚠️ Failed to delete vectors for session ${id}:`, error);
-          // Don't fail the request if vector deletion fails
+          logger.warn('SessionController', `Failed to delete vectors for session ${id}`, { error: error.message });
         });
 
       return res.status(200).json({ message: 'Session deleted successfully' });
     } catch (error) {
-      console.error('[chat] Error deleting session:', error);
-      return res.status(500).json({ error: 'Failed to delete session' });
+      logger.error('SessionController', 'Error deleting session', error instanceof Error ? error : undefined, { userId, sessionId: id });
+      if (error instanceof NotFoundError) throw error;
+      next(new ProcessingError('Failed to delete session'));
     }
   }
 }

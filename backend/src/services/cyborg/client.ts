@@ -10,4 +10,5 @@ export function getClient() {
             baseUrl: CYBORG_BASE_URL ? CYBORG_BASE_URL : 'http://localhost:8000' 
         })
     }
+    return client
 }
