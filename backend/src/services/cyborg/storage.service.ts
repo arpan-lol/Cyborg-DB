@@ -6,17 +6,10 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export class StorageService {
-  /**
-   * Generate vector ID from attachmentId and chunkIndex
-   * Format: "attachmentId:chunkIndex"
-   */
   private static generateVectorId(attachmentId: string, chunkIndex: number): string {
     return `${attachmentId}:${chunkIndex}`;
   }
 
-  /**
-   * Store vectors with streaming progress updates
-   */
   static async *storeVectorsStream(
     sessionId: string,
     attachmentId: string,
@@ -49,10 +42,6 @@ export class StorageService {
       `[CyborgDB] Stored ${totalStored} embeddings for attachment ${attachmentId} in session ${sessionId}`
     );
   }
-
-  /**
-   * Store vectors in batch
-   */
   static async storeVectors(
     sessionId: string,
     attachmentId: string,
@@ -70,9 +59,6 @@ export class StorageService {
     );
   }
 
-  /**
-   * Core storage method - stores in both CyborgDB (vectors) and PostgreSQL (metadata)
-   */
   private static async storeEmbeddings(
     sessionId: string,
     attachmentId: string,
@@ -85,25 +71,20 @@ export class StorageService {
 
     const client = getClient();
     const indexName = IndexService.generateIndexName(sessionId);
-    const indexKey = IndexService.getSessionKey(sessionId);
+    
+    const rawKey = process.env.ENCRYPTION_KEY;
+    if (!rawKey) throw new Error("Cyborg encryption key not set!");
+    const indexKey = Uint8Array.from(Buffer.from(rawKey, 'base64'));
 
-    if (!indexKey) {
-      throw new Error(`Encryption key not found for session ${sessionId}`);
-    }
+    const index = await client.loadIndex({indexName, indexKey});
 
-    // Load the index
-    const index = await client.loadIndex(indexName, indexKey);
-
-    // Prepare vectors for CyborgDB (only IDs and vectors)
-    const vectors = embeddings.map((embedding) => ({
+    const items = embeddings.map((embedding) => ({
       id: this.generateVectorId(attachmentId, embedding.chunkIndex),
       values: embedding.vector,
     }));
 
-    // Store vectors in CyborgDB (encrypted)
-    await index.upsert({ vectors });
+    await index.upsert({ items });
 
-    // Store metadata in PostgreSQL (searchable, unencrypted)
     const chunkDataRecords = embeddings.map((embedding) => ({
       id: this.generateVectorId(attachmentId, embedding.chunkIndex),
       attachmentId: attachmentId,
@@ -115,10 +96,9 @@ export class StorageService {
       endChar: embedding.metadata?.endChar ?? null,
     }));
 
-    // Bulk insert into PostgreSQL
     await prisma.chunkData.createMany({
       data: chunkDataRecords,
-      skipDuplicates: true, // In case of retry
+      skipDuplicates: true, 
     });
 
     if (embeddings.length > 0 && embeddings[0].metadata?.pageNumber) {
@@ -132,22 +112,17 @@ export class StorageService {
     );
   }
 
-  /**
-   * Delete all chunks for an attachment
-   */
   static async deleteAttachmentVectors(
     sessionId: string,
     attachmentId: string
   ): Promise<void> {
     const client = getClient();
     const indexName = IndexService.generateIndexName(sessionId);
-    const indexKey = IndexService.getSessionKey(sessionId);
+    
+    const rawKey = process.env.ENCRYPTION_KEY;
+    if (!rawKey) throw new Error("Cyborg encryption key not set!");
+    const indexKey = Uint8Array.from(Buffer.from(rawKey, 'base64'));
 
-    if (!indexKey) {
-      throw new Error(`Encryption key not found for session ${sessionId}`);
-    }
-
-    // Get all chunk vector IDs for this attachment
     const chunks = await prisma.chunkData.findMany({
       where: { attachmentId },
       select: { vectorId: true },
@@ -160,11 +135,9 @@ export class StorageService {
 
     const vectorIds = chunks.map((c) => c.vectorId);
 
-    // Delete from CyborgDB
-    const index = await client.loadIndex(indexName, indexKey);
+    const index = await client.loadIndex({indexName, indexKey});
     await index.delete({ ids: vectorIds });
 
-    // Delete from PostgreSQL
     await prisma.chunkData.deleteMany({
       where: { attachmentId },
     });

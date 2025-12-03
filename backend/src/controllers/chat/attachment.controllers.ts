@@ -26,7 +26,7 @@ export class AttachmentController {
     const file = req.file;
 
     try {
-      const session = await prisma.session.findUnique({
+      const session = await prisma.chatSession.findUnique({
         where: { id: sessionId, userId },
       });
 
@@ -100,7 +100,7 @@ export class AttachmentController {
     const { sessionId } = req.params;
 
     try {
-      const session = await prisma.session.findUnique({
+      const session = await prisma.chatSession.findUnique({
         where: { id: sessionId, userId },
       });
 
@@ -210,7 +210,7 @@ export class AttachmentController {
       const sessionId = metadata?.sessionId;
 
       if (sessionId) {
-        const session = await prisma.session.findUnique({
+        const session = await prisma.chatSession.findUnique({
           where: { id: sessionId, userId },
         });
 
@@ -250,7 +250,7 @@ export class AttachmentController {
       const sessionId = metadata?.sessionId;
 
       if (sessionId) {
-        const session = await prisma.session.findUnique({
+        const session = await prisma.chatSession.findUnique({
           where: { id: sessionId, userId },
         });
 

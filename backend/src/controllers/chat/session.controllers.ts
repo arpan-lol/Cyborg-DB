@@ -18,7 +18,7 @@ export class SessionController {
     const { title }: CreateSessionRequest = req.body;
 
     try {
-      const session = await prisma.session.create({
+      const session = await prisma.chatSession.create({
         data: {
           userId,
           title: title || 'New Chat',
@@ -43,11 +43,11 @@ export class SessionController {
     if (!userId) throw new UnauthorizedError();
 
     try {
-      const sessions = await prisma.session.findMany({
+      const sessions = await prisma.chatSession.findMany({
         where: { userId },
         orderBy: { updatedAt: 'desc' },
         include: {
-          chats: {
+          messages: {
             take: 1,
             orderBy: { createdAt: 'desc' },
           },
@@ -68,10 +68,10 @@ export class SessionController {
     const { id } = req.params;
 
     try {
-      const session = await prisma.session.findUnique({
+      const session = await prisma.chatSession.findUnique({
         where: { id, userId },
         include: {
-          chats: {
+          messages: {
             orderBy: { createdAt: 'asc' },
             include: {
               attachments: true,
@@ -89,13 +89,13 @@ export class SessionController {
         title: session.title || undefined,
         createdAt: session.createdAt,
         updatedAt: session.updatedAt,
-        messages: session.chats.map((msg) => ({
+        messages: session.messages.map((msg: any) => ({
           id: msg.id,
           role: msg.role as 'user' | 'assistant' | 'system',
           content: msg.content,
           tokens: msg.tokens || undefined,
           createdAt: msg.createdAt,
-          attachments: msg.attachments.map((att) => ({
+          attachments: msg.attachments.map((att: any) => ({
             id: att.id,
             type: att.type,
             url: att.url,
@@ -122,7 +122,7 @@ export class SessionController {
     const { id } = req.params;
 
     try {
-      const session = await prisma.session.findUnique({
+      const session = await prisma.chatSession.findUnique({
         where: { id, userId },
       });
 
@@ -130,7 +130,7 @@ export class SessionController {
         throw new NotFoundError('Session not found');
       }
 
-      await prisma.session.delete({
+      await prisma.chatSession.delete({
         where: { id },
       });
 

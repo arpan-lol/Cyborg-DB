@@ -26,6 +26,8 @@ export class SearchService {
             const indexName = IndexService.generateIndexName(sessionId);
             const hasIndex = await IndexService.hasIndex(sessionId);
 
+            const client = getClient()
+
             if (!hasIndex) {
                 console.log(`[CyborgDB] No index found for session: ${sessionId}`);
                 return [];
@@ -39,33 +41,29 @@ export class SearchService {
                 throw new Error(`Encryption key not found for session ${sessionId}`);
             }
 
-            // Load the index
-            const index = await client.loadIndex(indexName, indexKey);
+            const index = await client.loadIndex({indexName, indexKey});
 
-            // Generate query embedding (your existing Google embedding)
-            const queryVector = await EmbeddingService.generateQueryEmbedding(queryText);
+            const queryVector = await EmbeddingService.generateEmbedding(queryText);
 
-            // Search CyborgDB - over-fetch if filtering by attachment
             const searchK = attachmentId ? topK * 3 : topK;
-            const searchResults = await index.search({
-                vectors: [queryVector],
+            const searchResults = await index.query({
+                queryVectors: queryVector,
                 topK: searchK,
             });
 
-            // searchResults format: { ids: string[][], distances: number[][] }
-            const resultIds = searchResults.ids[0]; // First query results
-            const scores = searchResults.distances[0];
+            const queryResults = searchResults.results as Array<{id: string, distance: number}>;
+            const resultIds = queryResults.map(r => r.id);
+            const scores = queryResults.map(r => r.distance);
 
             if (resultIds.length === 0) {
                 console.log(`[CyborgDB] No results found for query in session ${sessionId}`);
                 return [];
             }
 
-            // Query PostgreSQL for chunk metadata
             const chunks = await prisma.chunkData.findMany({
                 where: {
                     vectorId: { in: resultIds },
-                    ...(attachmentId && { attachmentId }), // Filter by attachment if specified
+                    ...(attachmentId && { attachmentId }),
                 },
                 include: {
                     attachment: {
@@ -78,14 +76,12 @@ export class SearchService {
                 },
             });
 
-            // Create a map for quick lookup: vectorId -> chunk
             const chunkMap = new Map(
                 chunks.map((chunk) => [chunk.vectorId, chunk])
             );
 
-            // Combine vector scores with metadata, preserving CyborgDB result order
-            let results: SearchResult[] = resultIds
-                .map((vectorId, index) => {
+            const resultsWithNulls = resultIds
+                .map((vectorId: string, index: number): SearchResult | null => {
                     const chunk = chunkMap.get(vectorId);
                     if (!chunk) {
                         console.warn(`[CyborgDB] Vector ID ${vectorId} not found in PostgreSQL`);
@@ -106,10 +102,10 @@ export class SearchService {
                             ...(chunk.attachment.metadata as object),
                         },
                     };
-                })
-                .filter((r): r is SearchResult => r !== null);
+                });
+            
+            let results: SearchResult[] = resultsWithNulls.filter((r): r is SearchResult => r !== null);
 
-            // Trim to topK after filtering
             if (attachmentId) {
                 results = results.slice(0, topK);
                 console.log(`[CyborgDB] Found ${results.length} results in attachment ${attachmentId}`);
@@ -124,10 +120,6 @@ export class SearchService {
         }
     }
 
-    /**
-     * Get a specific chunk by attachment and index
-     * Pure PostgreSQL query - no vector search needed
-     */
     static async getChunk(
         sessionId: string,
         attachmentId: string,
@@ -161,7 +153,7 @@ export class SearchService {
                 filename: chunk.attachment.filename,
                 chunkIndex: chunk.chunkIndex,
                 pageNumber: chunk.pageNumber ?? undefined,
-                score: 0, // No similarity score for direct fetch
+                score: 0, 
                 metadata: {
                     startChar: chunk.startChar,
                     endChar: chunk.endChar,
@@ -178,10 +170,6 @@ export class SearchService {
         }
     }
 
-    /**
-     * Get all chunks for an attachment
-     * Pure PostgreSQL query - no vector search needed
-     */
     static async getAllChunks(
         sessionId: string,
         attachmentId: string

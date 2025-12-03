@@ -8,6 +8,9 @@ export interface Embedding {
 }
 
 export class EmbeddingService {
+  static async generateEmbedding(text: string): Promise<number[]> {
+    throw new Error('Not implemented');
+  }
 
   static async generateEmbeddings(chunks: Chunk[]): Promise<Embedding[]> {
     throw new Error('Not implemented');

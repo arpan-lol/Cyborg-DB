@@ -1,6 +1,7 @@
 import { dynamicTopK } from '../../config/rag.config';
 import { sseService } from '../sse.service';
 import { logger } from '../../utils/logger.util';
+import { SearchService, SearchResult } from '../cyborg/search.service';
 
 export interface EnhancedContext {
   content: string;
@@ -46,7 +47,7 @@ export class RetrievalService {
     );
 
     const promises = attachmentIds.map((attachmentId) =>
-      SearchService.search(sessionId, query, topKPerDoc, attachmentId) //to implement lol
+      SearchService.search(sessionId, query, topKPerDoc, attachmentId) 
     );
     const resultsArray = await Promise.all(promises);
     const allResults: SearchResult[] = resultsArray.flat();
