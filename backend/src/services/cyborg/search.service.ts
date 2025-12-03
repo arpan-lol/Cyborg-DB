@@ -1,0 +1,219 @@
+import { getClient } from './client';
+import { EmbeddingService } from '../embedding.service';
+import { IndexService } from './index.service';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+export interface SearchResult {
+    content: string;
+    attachmentId: string;
+    filename: string;
+    chunkIndex: number;
+    pageNumber?: number;
+    score: number;
+    metadata?: any;
+}
+
+export class SearchService {
+    static async search(
+        sessionId: string,
+        queryText: string,
+        topK: number = 10,
+        attachmentId?: string
+    ): Promise<SearchResult[]> {
+        try {
+            const indexName = IndexService.generateIndexName(sessionId);
+            const hasIndex = await IndexService.hasIndex(sessionId);
+
+            if (!hasIndex) {
+                console.log(`[CyborgDB] No index found for session: ${sessionId}`);
+                return [];
+            }
+
+            const rawKey = process.env.ENCRYPTION_KEY
+            if (!rawKey) throw new Error("Cyborg encryption key not set!")
+            const indexKey = Uint8Array.from(Buffer.from(rawKey, 'base64'));
+
+            if (!indexKey) {
+                throw new Error(`Encryption key not found for session ${sessionId}`);
+            }
+
+            // Load the index
+            const index = await client.loadIndex(indexName, indexKey);
+
+            // Generate query embedding (your existing Google embedding)
+            const queryVector = await EmbeddingService.generateQueryEmbedding(queryText);
+
+            // Search CyborgDB - over-fetch if filtering by attachment
+            const searchK = attachmentId ? topK * 3 : topK;
+            const searchResults = await index.search({
+                vectors: [queryVector],
+                topK: searchK,
+            });
+
+            // searchResults format: { ids: string[][], distances: number[][] }
+            const resultIds = searchResults.ids[0]; // First query results
+            const scores = searchResults.distances[0];
+
+            if (resultIds.length === 0) {
+                console.log(`[CyborgDB] No results found for query in session ${sessionId}`);
+                return [];
+            }
+
+            // Query PostgreSQL for chunk metadata
+            const chunks = await prisma.chunkData.findMany({
+                where: {
+                    vectorId: { in: resultIds },
+                    ...(attachmentId && { attachmentId }), // Filter by attachment if specified
+                },
+                include: {
+                    attachment: {
+                        select: {
+                            id: true,
+                            filename: true,
+                            metadata: true,
+                        },
+                    },
+                },
+            });
+
+            // Create a map for quick lookup: vectorId -> chunk
+            const chunkMap = new Map(
+                chunks.map((chunk) => [chunk.vectorId, chunk])
+            );
+
+            // Combine vector scores with metadata, preserving CyborgDB result order
+            let results: SearchResult[] = resultIds
+                .map((vectorId, index) => {
+                    const chunk = chunkMap.get(vectorId);
+                    if (!chunk) {
+                        console.warn(`[CyborgDB] Vector ID ${vectorId} not found in PostgreSQL`);
+                        return null;
+                    }
+
+                    return {
+                        content: chunk.content,
+                        attachmentId: chunk.attachmentId,
+                        filename: chunk.attachment.filename,
+                        chunkIndex: chunk.chunkIndex,
+                        pageNumber: chunk.pageNumber ?? undefined,
+                        score: scores[index],
+                        metadata: {
+                            startChar: chunk.startChar,
+                            endChar: chunk.endChar,
+                            pageNumber: chunk.pageNumber,
+                            ...(chunk.attachment.metadata as object),
+                        },
+                    };
+                })
+                .filter((r): r is SearchResult => r !== null);
+
+            // Trim to topK after filtering
+            if (attachmentId) {
+                results = results.slice(0, topK);
+                console.log(`[CyborgDB] Found ${results.length} results in attachment ${attachmentId}`);
+            } else {
+                console.log(`[CyborgDB] Found ${results.length} results for query in session ${sessionId}`);
+            }
+
+            return results;
+        } catch (error) {
+            console.error(`[CyborgDB] Search failed in session ${sessionId}:`, error);
+            return [];
+        }
+    }
+
+    /**
+     * Get a specific chunk by attachment and index
+     * Pure PostgreSQL query - no vector search needed
+     */
+    static async getChunk(
+        sessionId: string,
+        attachmentId: string,
+        chunkIndex: number
+    ): Promise<SearchResult | null> {
+        try {
+            const chunk = await prisma.chunkData.findUnique({
+                where: {
+                    attachmentId_chunkIndex: {
+                        attachmentId,
+                        chunkIndex,
+                    },
+                },
+                include: {
+                    attachment: {
+                        select: {
+                            filename: true,
+                            metadata: true,
+                        },
+                    },
+                },
+            });
+
+            if (!chunk) {
+                return null;
+            }
+
+            return {
+                content: chunk.content,
+                attachmentId: chunk.attachmentId,
+                filename: chunk.attachment.filename,
+                chunkIndex: chunk.chunkIndex,
+                pageNumber: chunk.pageNumber ?? undefined,
+                score: 0, // No similarity score for direct fetch
+                metadata: {
+                    startChar: chunk.startChar,
+                    endChar: chunk.endChar,
+                    pageNumber: chunk.pageNumber,
+                    ...(chunk.attachment.metadata as object),
+                },
+            };
+        } catch (error) {
+            console.error(
+                `[CyborgDB] Failed to retrieve chunk ${chunkIndex} for attachment ${attachmentId}:`,
+                error
+            );
+            return null;
+        }
+    }
+
+    /**
+     * Get all chunks for an attachment
+     * Pure PostgreSQL query - no vector search needed
+     */
+    static async getAllChunks(
+        sessionId: string,
+        attachmentId: string
+    ): Promise<Array<{ content: string; index: number; metadata?: any }>> {
+        try {
+            const chunks = await prisma.chunkData.findMany({
+                where: { attachmentId },
+                orderBy: { chunkIndex: 'asc' },
+                select: {
+                    content: true,
+                    chunkIndex: true,
+                    pageNumber: true,
+                    startChar: true,
+                    endChar: true,
+                },
+            });
+
+            const result = chunks.map((chunk) => ({
+                content: chunk.content,
+                index: chunk.chunkIndex,
+                metadata: {
+                    pageNumber: chunk.pageNumber,
+                    startChar: chunk.startChar,
+                    endChar: chunk.endChar,
+                },
+            }));
+
+            console.log(`[CyborgDB] Retrieved ${result.length} chunks for attachment ${attachmentId}`);
+            return result;
+        } catch (error) {
+            console.error(`[CyborgDB] Failed to retrieve chunks for attachment ${attachmentId}:`, error);
+            return [];
+        }
+    }
+}

@@ -1,8 +1,8 @@
 import { jobQueue } from '../queue';
 import prisma from '../prisma/client';
-import { IngestionService } from '../services/file-processing/ingestion.service';
-import { ChunkingService } from '../services/file-processing/chunking.service';
-import { EmbeddingService } from '../services/file-processing/embedding.service';
+import { IngestionService } from '../services/ingestion.service';
+import { ChunkingService } from '../services/chunking.service';
+import { EmbeddingService } from '../services/embedding.service';
 import { VectorStoreService } from '../services/file-processing/vector-store.service';
 import { sseService } from '../services/sse.service';
 

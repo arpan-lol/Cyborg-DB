@@ -14,27 +14,27 @@ model User {
   name         String
   picture      String?
   refreshToken String?
-  password     String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  sessions     Session[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  chatSessions ChatSession[]
 }
 
-model Session {
-  id        String   @id @default(uuid())
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String?
-  chats     Chat[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model ChatSession {
+  id              String    @id @default(uuid())
+  userId          Int
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String?
+  messages        Message[]
+  vectorIndexKey  Bytes?    // NEW: Store encryption key for CyborgDB
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
-model Chat {
+model Message {
   id          String       @id @default(uuid())
   sessionId   String
-  session     Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  role        String // 'user' | 'assistant' | 'system'
+  session     ChatSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role        String       // 'user' | 'assistant' | 'system'
   content     String       @db.Text
   attachments Attachment[]
   tokens      Int?
@@ -42,14 +42,32 @@ model Chat {
 }
 
 model Attachment {
-  id              String           @id @default(uuid())
-  chatId          String?
-  chat            Chat?            @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  type            String
-  url             String
-  filename        String
-  mimeType        String
-  size            Int
-  metadata        Json?
-  createdAt       DateTime         @default(now())
+  id        String      @id @default(uuid())
+  messageId String?
+  message   Message?    @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  type      String  
+  url       String
+  filename  String
+  mimeType  String
+  size      Int
+  metadata  Json?
+  chunks    ChunkData[] // NEW: Relation to chunks
+  createdAt DateTime    @default(now())
+}
+
+model ChunkData {
+  id           String      @id @default(uuid())
+  attachmentId String
+  attachment   Attachment  @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+  chunkIndex   Int
+  content      String      @db.Text
+  vectorId     String      @unique //"attachmentId:chunkIndex" 
+  pageNumber   Int?        
+  startChar    Int?
+  endChar      Int?
+  storedAt     DateTime    @default(now())
+
+  @@unique([attachmentId, chunkIndex])
+  @@index([vectorId])
+  @@index([attachmentId])
 }
