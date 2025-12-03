@@ -12,6 +12,7 @@
   "author": "Ashish K. Chowdhary, Arpan Taneja, Pratham Gupta",
   "license": "MIT",
   "dependencies": {
+    "@google/genai": "^1.33.0",
     "@prisma/client": "^6.17.0",
     "cors": "^2.8.5",
     "cyborgdb": "^0.14.0",

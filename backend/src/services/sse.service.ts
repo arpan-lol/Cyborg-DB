@@ -1,77 +1,91 @@
 import { Response } from 'express';
+import prisma from '../prisma/client';
 
-interface SSEClient {
+interface ProgressClient {
   res: Response;
   attachmentId: string;
 }
-
 class SSEService {
-  private clients: Map<string, SSEClient[]> = new Map();
+  private progressClients: Map<string, ProgressClient[]> = new Map();
 
-  addClient(attachmentId: string, res: Response) {
+  private setupSSEHeaders(res: Response) {
+    const origin = process.env.FRONTEND_ORIGIN || 'https://cosmicengine.arpantaneja.dev';
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no'); 
+    res.setHeader('X-Accel-Buffering', 'no');
+  }
 
-    const clients = this.clients.get(attachmentId) || [];
+  private sendSSE(res: Response, data: any): boolean {
+    try {
+      const message = `data: ${JSON.stringify(data)}\n\n`;
+      res.write(message);
+      return true;
+    } catch (error) {
+      console.error(`[SSE] Error sending to client:`, error);
+      return false;
+    }
+  }
+
+  addProgressClient(attachmentId: string, res: Response) {
+    this.setupSSEHeaders(res);
+
+    const clients = this.progressClients.get(attachmentId) || [];
     clients.push({ res, attachmentId });
-    this.clients.set(attachmentId, clients);
+    this.progressClients.set(attachmentId, clients);
 
     console.log(`[SSE] Client connected for attachment: ${attachmentId} (total: ${clients.length})`);
 
-    this.sendToAttachment(attachmentId, {
+    this.sendProgress(attachmentId, {
       status: 'connected',
-      message: 'Listening for updates...',
+      message: 'indexing...',
     });
 
     res.on('close', () => {
-      this.removeClient(attachmentId, res);
+      this.removeProgressClient(attachmentId, res);
     });
   }
 
-  private removeClient(attachmentId: string, res: Response) {
-    const clients = this.clients.get(attachmentId);
+  private removeProgressClient(attachmentId: string, res: Response) {
+    const clients = this.progressClients.get(attachmentId);
     if (!clients) return;
 
     const filtered = clients.filter(client => client.res !== res);
     
     if (filtered.length === 0) {
-      this.clients.delete(attachmentId);
+      this.progressClients.delete(attachmentId);
       console.log(`[SSE] No more clients for attachment: ${attachmentId}`);
     } else {
-      this.clients.set(attachmentId, filtered);
+      this.progressClients.set(attachmentId, filtered);
       console.log(`[SSE] Client disconnected for ${attachmentId} (remaining: ${filtered.length})`);
     }
   }
 
-  sendToAttachment(attachmentId: string, data: any) {
-    const clients = this.clients.get(attachmentId);
+  sendProgress(attachmentId: string, data: any) {
+    const clients = this.progressClients.get(attachmentId);
     if (!clients || clients.length === 0) return;
 
-    const message = `data: ${JSON.stringify(data)}\n\n`;
-    
     clients.forEach(client => {
-      try {
-        client.res.write(message);
-      } catch (error) {
-        console.error(`[SSE] Error sending to client:`, error);
-        this.removeClient(attachmentId, client.res);
+      const success = this.sendSSE(client.res, data);
+      if (!success) {
+        this.removeProgressClient(attachmentId, client.res);
       }
     });
 
     console.log(`[SSE] Sent to ${clients.length} client(s) for ${attachmentId}:`, data.status);
   }
 
-  closeAttachment(attachmentId: string) {
-    const clients = this.clients.get(attachmentId);
+  closeProgress(attachmentId: string) {
+    const clients = this.progressClients.get(attachmentId);
     if (!clients) return;
 
     clients.forEach(client => {
       client.res.end();
     });
 
-    this.clients.delete(attachmentId);
+    this.progressClients.delete(attachmentId);
     console.log(`[SSE] Closed all connections for ${attachmentId}`);
   }
 }

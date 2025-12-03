@@ -1,36 +1,37 @@
-import { Response } from 'express';
+import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../../types/express';
 import prisma from '../../prisma/client';
 import { UploadFileResponse } from '../../types/chat.types';
 import path from 'path';
 import { jobQueue } from '../../queue';
 import { sseService } from '../../services/sse.service';
+import { logger } from '../../utils/logger.util';
+import { UnauthorizedError, NotFoundError, ValidationError, ProcessingError } from '../../types/error.types';
 
 export class AttachmentController {
-  static async uploadFile(req: AuthRequest, res: Response): Promise<Response> {
+  static async uploadFile(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
     const userId = req.user?.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) throw new UnauthorizedError();
 
     if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+      throw new ValidationError('No file uploaded');
     }
 
-    const { sessionId } = req.body; // Get sessionId from request body
+    const { sessionId } = req.body;
 
     if (!sessionId) {
-      return res.status(400).json({ error: 'Session ID is required' });
+      throw new ValidationError('Session ID is required');
     }
 
     const file = req.file;
 
     try {
-      // Verify session belongs to user
-      const session = await prisma.chatSession.findUnique({
+      const session = await prisma.session.findUnique({
         where: { id: sessionId, userId },
       });
 
       if (!session) {
-        return res.status(404).json({ error: 'Session not found' });
+        throw new NotFoundError('Session not found');
       }
 
       // Determine file type based on mimetype
@@ -66,14 +67,12 @@ export class AttachmentController {
           },
         },
       });
-
-      // Queue the file for processing with sessionId
       jobQueue.add('process-file', {
         attachmentId: attachment.id,
         userId,
-        sessionId, // Pass sessionId to orchestrator
+        sessionId,
       }).catch((err: Error) => {
-        console.error(`[chat] Failed to queue file processing: ${err.message}`);
+        logger.error('AttachmentController', 'Failed to queue file processing', err, { attachmentId: attachment.id, sessionId });
       });
 
       const response: UploadFileResponse = {
@@ -83,21 +82,79 @@ export class AttachmentController {
         url: attachment.url,
       };
 
-      console.log(`[chat] File uploaded: ${attachment.filename} (${attachment.id}) for session ${sessionId}`);
+      logger.info('AttachmentController', `File uploaded: ${attachment.filename}`, { attachmentId: attachment.id, sessionId });
       return res.status(201).json(response);
     } catch (error) {
-      console.error('[chat] Error uploading file:', error);
-      return res.status(500).json({ error: 'Failed to upload file' });
+      logger.error('AttachmentController', 'Error uploading file', error instanceof Error ? error : undefined, { sessionId, userId });
+      if (error instanceof NotFoundError || error instanceof ValidationError) throw error;
+      next(new ProcessingError('Failed to upload file'));
     }
   }
 
-  /**
-   * Get attachment processing status
-   */
-  static async getAttachmentStatus(req: AuthRequest, res: Response) {
+  static async getSessionAttachments(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
     const userId = req.user?.userId;
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      throw new UnauthorizedError();
+    }
+
+    const { sessionId } = req.params;
+
+    try {
+      const session = await prisma.session.findUnique({
+        where: { id: sessionId, userId },
+      });
+
+      if (!session) {
+        throw new NotFoundError('Session not found');
+      }
+
+      // Get all attachments for this session
+      const attachments = await prisma.attachment.findMany({
+        where: {
+          metadata: {
+            path: ['sessionId'],
+            equals: sessionId,
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      const attachmentsWithStatus = attachments.map((att) => {
+        const metadata = att.metadata as any;
+        const processed = metadata?.processed || false;
+        const hasFailed = metadata?.failedAt || metadata?.error;
+        
+        return {
+          id: att.id,
+          filename: att.filename,
+          type: att.type,
+          url: att.url,
+          storedFilename: metadata?.storedFilename,
+          mimeType: att.mimeType,
+          size: att.size,
+          createdAt: att.createdAt,
+          metadata: {
+            processed,
+            error: !processed && hasFailed ? (metadata?.error || 'Processing failed') : undefined,
+            chunkCount: metadata?.chunkCount,
+          },
+        };
+      });
+
+      return res.status(200).json({ attachments: attachmentsWithStatus });
+    } catch (error) {
+      logger.error('AttachmentController', 'Error fetching session attachments', error instanceof Error ? error : undefined, { sessionId, userId });
+      if (error instanceof NotFoundError) throw error;
+      next(new ProcessingError('Failed to fetch attachments'));
+    }
+  }
+
+  static async getAttachmentStatus(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw new UnauthorizedError();
     }
 
     try {
@@ -108,33 +165,34 @@ export class AttachmentController {
       });
 
       if (!attachment) {
-        return res.status(404).json({ error: 'Attachment not found' });
+        throw new NotFoundError('Attachment not found');
       }
 
       const metadata = attachment.metadata as any;
       const processed = metadata?.processed || false;
-      const error = metadata?.error;
       const chunkCount = metadata?.chunkCount;
+      const hasFailed = metadata?.failedAt || metadata?.error;
 
       return res.status(200).json({
         attachmentId: attachment.id,
         filename: attachment.filename,
         processed,
-        error,
+        error: !processed && hasFailed ? (metadata?.error || 'Processing failed') : undefined,
         chunkCount,
         processedAt: metadata?.processedAt,
         failedAt: metadata?.failedAt,
       });
     } catch (error) {
-      console.error('[chat] Error getting attachment status:', error);
-      return res.status(500).json({ error: 'Failed to get attachment status' });
+      logger.error('AttachmentController', 'Error getting attachment status', error instanceof Error ? error : undefined, { attachmentId: req.params.attachmentId, userId });
+      if (error instanceof NotFoundError) throw error;
+      next(new ProcessingError('Failed to get attachment status'));
     }
   }
 
-  static async streamAttachmentStatus(req: AuthRequest, res: Response) {
+  static async streamAttachmentStatus(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     const userId = req.user?.userId;
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      throw new UnauthorizedError();
     }
 
     const { attachmentId } = req.params;
@@ -145,15 +203,71 @@ export class AttachmentController {
       });
 
       if (!attachment) {
-        return res.status(404).json({ error: 'Attachment not found' });
+        throw new NotFoundError('Attachment not found');
       }
 
-      sseService.addClient(attachmentId, res);
+      const metadata = attachment.metadata as any;
+      const sessionId = metadata?.sessionId;
 
-      console.log(`[chat] SSE stream started for attachment: ${attachmentId}`);
+      if (sessionId) {
+        const session = await prisma.session.findUnique({
+          where: { id: sessionId, userId },
+        });
+
+        if (!session) {
+          throw new UnauthorizedError('You do not have access to this attachment');
+        }
+      }
+
+      sseService.addProgressClient(attachmentId, res);
+
+      logger.info('AttachmentController', `SSE stream started for attachment: ${attachmentId}`, { userId, sessionId });
     } catch (error) {
-      console.error('[chat] Error starting SSE stream:', error);
-      return res.status(500).json({ error: 'Failed to start stream' });
+      logger.error('AttachmentController', 'Error starting SSE stream', error instanceof Error ? error : undefined, { attachmentId, userId });
+      if (error instanceof NotFoundError || error instanceof UnauthorizedError) throw error;
+      next(new ProcessingError('Failed to start stream'));
+    }
+  }
+
+  static async deleteAttachment(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw new UnauthorizedError();
+    }
+
+    const { attachmentId } = req.params;
+
+    try {
+      const attachment = await prisma.attachment.findUnique({
+        where: { id: attachmentId },
+      });
+
+      if (!attachment) {
+        throw new NotFoundError('Attachment not found');
+      }
+
+      const metadata = attachment.metadata as any;
+      const sessionId = metadata?.sessionId;
+
+      if (sessionId) {
+        const session = await prisma.session.findUnique({
+          where: { id: sessionId, userId },
+        });
+
+        if (!session) {
+          throw new UnauthorizedError('Not authorized to delete this attachment');
+        }
+      }
+
+      await prisma.attachment.delete({
+        where: { id: attachmentId },
+      });
+      logger.info('AttachmentController', `Attachment deleted: ${attachmentId}`, { attachmentId, sessionId, userId });
+      return res.status(200).json({ success: true, message: 'Attachment deleted successfully' });
+    } catch (error) {
+      logger.error('AttachmentController', 'Error deleting attachment', error instanceof Error ? error : undefined, { attachmentId, userId });
+      if (error instanceof NotFoundError || error instanceof UnauthorizedError) throw error;
+      next(new ProcessingError('Failed to delete attachment'));
     }
   }
 }
