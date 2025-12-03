@@ -43,7 +43,7 @@ export class SearchService {
 
             const index = await client.loadIndex({indexName, indexKey});
 
-            const queryVector = await EmbeddingService.generateEmbedding(queryText);
+            const queryVector = await EmbeddingService.generateQueryEmbedding(queryText);
 
             const searchK = attachmentId ? topK * 3 : topK;
             const searchResults = await index.query({
