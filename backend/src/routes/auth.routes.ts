@@ -3,6 +3,9 @@ import prisma from '../prisma/client';
 import { googleClient, GOOGLE_CLIENT_ID } from '../utils/googleClient';
 import { signJwt, verifyJwt, decodeJwt } from '../utils/jwt';
 import { authenticateJWT } from '../middleware/auth'
+import { logger } from '../utils/logger.util';
+import { ProcessingError } from '../types/error.types';
+import { asyncHandler } from '../utils/asyncHandler.util';
 
 import { Response } from 'express';
 import { AuthRequest } from '../types/express';
@@ -10,16 +13,16 @@ import { AuthRequest } from '../types/express';
 const router = Router();
 const FRONTEND_REDIRECT = process.env.FRONTEND_REDIRECT!;
 
-router.get('/google', (req, res) => {
+router.get('/google', asyncHandler(async (req: AuthRequest, res: Response) => {
   const url = googleClient.generateAuthUrl({
     access_type: 'offline',
     prompt: 'consent',
     scope: ['profile', 'email'],
   });
   res.redirect(url);
-});
+}));
 
-router.get('/google/callback', async (req, res) => {
+router.get('/google/callback', asyncHandler(async (req: AuthRequest, res: Response) => {
   const code = req.query.code as string;
   if (!code) {
     console.error('[auth] Missing authorization code');
@@ -83,9 +86,9 @@ router.get('/google/callback', async (req, res) => {
     console.error('[auth] Error stack:', err instanceof Error ? err.stack : 'No stack trace');
     res.status(500).send('Authentication failed');
   }
-});
+}));
 
-router.post('/refresh', async (req, res) => {
+router.post('/refresh', asyncHandler(async (req: AuthRequest, res: Response) => {
   const oldToken = req.body.token;
   if (!oldToken) return res.status(400).json({ error: 'Missing token' });
 
@@ -128,10 +131,10 @@ router.post('/refresh', async (req, res) => {
     console.error('[refresh] Error refreshing token:', err);
     res.status(500).json({ error: 'Failed to refresh token' });
   }
-});
+}));
 
 
-router.post('/logout', authenticateJWT, async (req: AuthRequest, res: Response) => {
+router.post('/logout', authenticateJWT, asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user?.userId;
   if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
@@ -146,9 +149,9 @@ router.post('/logout', authenticateJWT, async (req: AuthRequest, res: Response) 
     console.error('Logout error:', err);
     return res.status(500).json({ message: 'Failed to logout' });
   }
-});
+}));
 
-router.get('/me', authenticateJWT, async (req: AuthRequest, res: Response) => {
+router.get('/me', authenticateJWT, asyncHandler(async (req: AuthRequest, res: Response) => {
   if (!req.user) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
@@ -161,6 +164,41 @@ router.get('/me', authenticateJWT, async (req: AuthRequest, res: Response) => {
       picture: req.user.picture,
     }
   });
-});
+}));
+
+router.post('/guest', asyncHandler(async (req: AuthRequest, res: Response) => {
+  try {
+    let guestUser = await prisma.user.findUnique({
+      where: { email: 'guest@cosmicengine' }
+    });
+
+    if (!guestUser) {
+      guestUser = await prisma.user.create({
+        data: {
+          email: 'guest@cosmicengine',
+          name: 'Guest User',
+          password: 'guest',
+          googleId: null,
+        }
+      });
+    }
+
+    const customJwt = signJwt(guestUser);
+    
+    res.json({
+      success: true,
+      token: customJwt,
+      user: {
+        id: guestUser.id,
+        email: guestUser.email,
+        name: guestUser.name,
+        picture: guestUser.picture,
+      }
+    });
+  } catch (err) {
+    logger.error('Auth', 'Guest login error', err instanceof Error ? err : undefined);
+    throw new ProcessingError('Guest login failed');
+  }
+}));
 
 export default router;
