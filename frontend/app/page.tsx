@@ -1,12 +1,13 @@
-export default function Home() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Flux AI</h1>
-        <p className="text-lg text-gray-600 dark:text-gray-400">
-          ram ram 🙏
-        </p>
-      </div>
-    </div>
-  );
+import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
+
+export default async function HomePage() {
+  const cookieStore = await cookies()
+  const token = cookieStore.get('jwt')?.value
+
+  if (token) {
+    redirect('/dashboard')
+  }
+
+  redirect('/auth/login')
 }

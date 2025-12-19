@@ -1,0 +1,84 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { api } from '@/lib/api';
+import type { Conversation } from '@/lib/types';
+
+export const useConversations = () => {
+  return useQuery<Conversation[]>({
+    queryKey: ['conversations'],
+    queryFn: async () => {
+      const response = await api.get('/chat/sessions');
+      const data = await response.json();
+      return data.sessions;
+    },
+  });
+};
+
+export const useConversation = (sessionId: string | null) => {
+  return useQuery<Conversation>({
+    queryKey: ['conversations', sessionId],
+    queryFn: async () => {
+      const response = await api.get(`/chat/sessions/${sessionId}`);
+      return await response.json();
+    },
+    enabled: !!sessionId,
+  });
+};
+
+export const useCreateConversation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (title?: string) => {
+      const response = await api.post('/chat/sessions', { title });
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    },
+  });
+};
+
+export const useDeleteConversation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (sessionId: string) => {
+      await api.delete(`/chat/sessions/${sessionId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    },
+  });
+};
+
+export const useUpdateConversationTitle = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ sessionId, title }: { sessionId: string; title: string }) => {
+      const response = await api.patch(`/chat/sessions/${sessionId}`, { title });
+      return await response.json();
+    },
+    onMutate: async ({ sessionId, title }) => {
+      await queryClient.cancelQueries({ queryKey: ['conversations'] });
+      
+      const previousConversations = queryClient.getQueryData(['conversations']);
+      
+      queryClient.setQueryData(['conversations'], (old: Conversation[] | undefined) =>
+        old?.map(conv => 
+          conv.id === sessionId ? { ...conv, title } : conv
+        )
+      );
+      
+      return { previousConversations };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousConversations) {
+        queryClient.setQueryData(['conversations'], context.previousConversations);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    },
+  });
+};
