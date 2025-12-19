@@ -44,22 +44,12 @@ export function LoginForm({
                 setLoadingGuest(true);
                 setGuestError(null);
                 try {
-                  console.log('[Guest] calling frontend route /auth/guest');
-                  const response = await fetch('/auth/guest', { method: 'POST' });
+                  console.log('[Guest] calling frontend API route /api/auth/guest');
+                  const response = await fetch('/api/auth/guest', { method: 'POST' });
                   const data = await response.json().catch(() => null);
                   console.log('[Guest] response', response.status, data);
                   if (response.ok && data?.success) {
-                    router.push('/dashboard/sessions');
-                    return;
-                  }
-
-                  // Fallback: try backend direct call
-                  console.log('[Guest] falling back to backend /auth/guest');
-                  const backendResp = await api.post('/auth/guest');
-                  const backendData = await backendResp.json().catch(() => null);
-                  console.log('[Guest] backend response', backendResp.status, backendData);
-                  if (backendResp.ok && backendData?.success) {
-                    router.push('/dashboard/sessions');
+                    window.location.href = '/dashboard/sessions';
                     return;
                   }
 

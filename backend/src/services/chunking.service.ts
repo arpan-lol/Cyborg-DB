@@ -103,7 +103,6 @@ export class ChunkingService {
         },
       };
     }    
-    console.log(`[Chunking] Stream complete: Generated ${chunkIndex} chunks total`);    
     console.log(`[Chunking] Stream complete: Generated ${chunkIndex} chunks total`);
   }
 

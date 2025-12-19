@@ -3,7 +3,7 @@ services:
   cyborgdb:
     image: cyborginc/cyborgdb-service:latest
     ports:
-      - "8000:8000"
+      - "8000:3006"
     env_file:
       - ./.env
     volumes:

@@ -16,7 +16,7 @@ export const globalErrorHandler: ErrorRequestHandler = (
     body: req.body,
   });
 
-  const origin = process.env.FRONTEND_ORIGIN || '*';
+  const origin = process.env.FRONTEND_ORIGIN || 'https://cyborg.arpantaneja.dev';
   res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Credentials', 'true');
 

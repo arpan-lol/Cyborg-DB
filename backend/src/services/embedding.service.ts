@@ -10,11 +10,20 @@ export interface Embedding {
   metadata?: Record<string, any>;
 }
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GOOGLE_GENAI_API_KEY,
-});
-
 const EMBEDDING_MODEL = 'text-embedding-004';
+
+let ai: GoogleGenAI | null = null;
+
+function getGoogleGenAI(): GoogleGenAI {
+  if (!ai) {
+    const apiKey = process.env.GOOGLE_GENAI_API_KEY?.trim();
+    if (!apiKey) {
+      throw new ProcessingError('GOOGLE_GENAI_API_KEY environment variable is not set');
+    }
+    ai = new GoogleGenAI({ apiKey });
+  }
+  return ai;
+}
 
 export class EmbeddingService {
   static async *generateEmbeddingsStream(
@@ -51,7 +60,7 @@ export class EmbeddingService {
     const texts = chunks.map((chunk) => chunk.content);
 
     try {
-      const response = await ai.models.embedContent({
+      const response = await getGoogleGenAI().models.embedContent({
         model: EMBEDDING_MODEL,
         contents: texts,
         config: { taskType: 'RETRIEVAL_DOCUMENT'},
@@ -94,7 +103,7 @@ export class EmbeddingService {
 
   static async generateQueryEmbedding(queryText: string): Promise<number[]> {
     try {
-      const response = await ai.models.embedContent({
+      const response = await getGoogleGenAI().models.embedContent({
         model: EMBEDDING_MODEL,
         contents: [queryText],
         config: { taskType: 'RETRIEVAL_QUERY'},

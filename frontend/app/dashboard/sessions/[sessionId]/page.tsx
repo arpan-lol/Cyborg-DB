@@ -556,9 +556,13 @@ export default function ChatSessionPage() {
 
   const isLoadingResponse = isStreaming && !streamedContent;
   
-  const hasProcessingAttachments = sessionAttachments?.some(
-    (att: any) => !att.metadata?.processed && !att.metadata?.error
-  ) || false;
+  const hasProcessingAttachments = Array.from(temporaryFiles.values()).some(
+    (tempFile) => {
+      const isProcessing = tempFile.processingProgress?.status === 'processing' || 
+                          tempFile.processingProgress?.status === 'connected';
+      return isProcessing;
+    }
+  );
 
   const hasBM25Indexing = sessionAttachments?.some(
     (att: any) => att.bm25indexStatus === 'queued' || att.bm25indexStatus === 'processing'

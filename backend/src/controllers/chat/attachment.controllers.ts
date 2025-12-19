@@ -97,7 +97,7 @@ export class AttachmentController {
       throw new UnauthorizedError();
     }
 
-    const { sessionId } = req.params;
+    const { id: sessionId } = req.params;
 
     try {
       const session = await prisma.chatSession.findUnique({

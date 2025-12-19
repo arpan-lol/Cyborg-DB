@@ -52,7 +52,7 @@ export class IngestionService {
       }
 
       console.log(
-        `[Ingestion] ✅ Converted successfully: ${data.content_length} characters in ${data.processing_time.toFixed(2)}s`
+        `[Ingestion]   Converted successfully: ${data.content_length} characters in ${data.processing_time.toFixed(2)}s`
       );
 
       return data.markdown_content;

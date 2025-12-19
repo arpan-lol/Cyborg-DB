@@ -80,7 +80,7 @@ export class StorageService {
 
     const items = embeddings.map((embedding) => ({
       id: this.generateVectorId(attachmentId, embedding.chunkIndex),
-      values: embedding.vector,
+      vector: embedding.vector,
     }));
 
     await index.upsert({ items });

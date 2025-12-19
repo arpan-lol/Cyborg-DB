@@ -89,7 +89,7 @@ async function processFile(attachmentId: string, userId: number, sessionId: stri
       },
     });
 
-    console.log(`[Orchestrator] ✅ Successfully processed: ${attachmentId}`);
+    console.log(`[Orchestrator]   Successfully processed: ${attachmentId}`);
     
     sseService.sendProgress(attachmentId, {
       status: 'completed',
@@ -143,8 +143,8 @@ export function Orchestrator() {
     const { attachmentId, userId, sessionId } = data;
     console.log(`[Orchestrator] Processing file job: attachmentId=${attachmentId}, userId=${userId}, sessionId=${sessionId}`);
     await processFile(attachmentId, userId, sessionId);
-    console.log(`[Orchestrator] ✅ File job completed: ${attachmentId}`);
+    console.log(`[Orchestrator] File job completed: ${attachmentId}`);
   });
 
-  console.log('[Orchestrator] ✅ File processor ready');
+  console.log('[Orchestrator] File processor ready');
 }

@@ -9,7 +9,7 @@ class SSEService {
   private progressClients: Map<string, ProgressClient[]> = new Map();
 
   private setupSSEHeaders(res: Response) {
-    const origin = process.env.FRONTEND_ORIGIN || 'https://cosmicengine.arpantaneja.dev';
+    const origin = process.env.FRONTEND_ORIGIN || 'https://cyborg.arpantaneja.dev';
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Content-Type', 'text/event-stream');

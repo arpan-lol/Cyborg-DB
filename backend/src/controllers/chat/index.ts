@@ -2,6 +2,7 @@ import { SessionController } from './session.controllers';
 import { MessageController } from './message.controllers';
 import { AttachmentController } from './attachment.controllers';
 import { SearchController } from './search.controllers';
+import { eventsController } from './events.controllers';
 
 export const ChatController = {
   // Session methods
@@ -22,9 +23,13 @@ export const ChatController = {
 
   // Search methods
   searchSession: SearchController.searchSession,
+
+  // Events methods
+  connectToSessionEvents: eventsController.connectToSessionEvents,
 };
 
 export { SessionController } from './session.controllers';
 export { MessageController } from './message.controllers';
 export { AttachmentController } from './attachment.controllers';
 export { SearchController } from './search.controllers';
+export { eventsController } from './events.controllers';

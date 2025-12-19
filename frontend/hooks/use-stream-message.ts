@@ -58,30 +58,30 @@ export const useStreamMessage = () => {
         const requestBody: any = {
           content,
           attachmentIds: options?.attachmentIds,
-          documentIds: options?.documentIds,
+          // documentIds: options?.documentIds,
         }
 
-        const hasSearchOptions =
-          options?.bm25 !== undefined ||
-          options?.rrf !== undefined ||
-          options?.caching !== undefined ||
-          options?.queryExpansion !== undefined
+        // const hasSearchOptions =
+        //   options?.bm25 !== undefined ||
+        //   options?.rrf !== undefined ||
+        //   options?.caching !== undefined ||
+        //   options?.queryExpansion !== undefined
 
-        if (hasSearchOptions) {
-          requestBody.options = {}
+        // if (hasSearchOptions) {
+        //   requestBody.options = {}
 
-          if (options?.bm25 !== undefined)
-            requestBody.options.bm25 = options.bm25
+        //   if (options?.bm25 !== undefined)
+        //     requestBody.options.bm25 = options.bm25
 
-          if (options?.rrf !== undefined)
-            requestBody.options.rrf = options.rrf
+        //   if (options?.rrf !== undefined)
+        //     requestBody.options.rrf = options.rrf
 
-          if (options?.caching !== undefined)
-            requestBody.options.caching = options.caching
+        //   if (options?.caching !== undefined)
+        //     requestBody.options.caching = options.caching
 
-          if (options?.queryExpansion !== undefined)
-            requestBody.options.queryExpansion = options.queryExpansion
-        }
+        //   if (options?.queryExpansion !== undefined)
+        //     requestBody.options.queryExpansion = options.queryExpansion
+        // }
 
         console.log(
           '[STREAM] Sending message with body:',
@@ -89,7 +89,7 @@ export const useStreamMessage = () => {
         )
 
         const response = await fetch(
-          `${API_BASE_URL}/chat/sessions/${sessionId}/message`,
+          `${API_BASE_URL}/chat/sessions/${sessionId}/messages`,
           {
             method: 'POST',
             headers,
