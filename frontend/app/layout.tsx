@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Cosmic Engine',
-  description: 'Streamline your workflow with Cosmic Engine',
+  title: 'Flux AI',
+  description: 'Streamline your workflow with Flux AI',
 }
 
 export default function RootLayout({
