@@ -1,3 +1,11 @@
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load environment variables before importing Prisma client
+dotenv.config({
+  path: path.join(process.cwd(), '.env')
+});
+
 import prisma from './client';
 
 async function main() {
