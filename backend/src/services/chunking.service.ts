@@ -15,27 +15,149 @@ interface PagePosition {
 }
 
 export class ChunkingService {
+  static async *chunkContentStream(
+    markdown: string,
+    options: ChunkOptions = {}
+  ): AsyncGenerator<Chunk> {
+    const { chunkSize = 1000, overlap = 200 } = options;
+
+    if (chunkSize <= overlap) {
+      throw new Error('chunkSize must be greater than chunkOverlap');
+    }
+
+    const pagePositions = this.extractPageNumbers(markdown);
+
+    const separators = ['\n\n', '\n', '. ', ' '];
+    let buffer = '';
+    let chunkIndex = 0;
+    let globalPosition = 0;
+
+    const SEGMENT_SIZE = 100000;
+    
+    for (let i = 0; i < markdown.length; i += SEGMENT_SIZE) {
+      const segment = markdown.slice(i, Math.min(i + SEGMENT_SIZE, markdown.length));
+      buffer += segment;
+
+      while (buffer.length >= chunkSize || (i + SEGMENT_SIZE >= markdown.length && buffer.length > 0)) {
+        const endIndex = Math.min(chunkSize, buffer.length);
+        let chunkText = buffer.slice(0, endIndex);
+
+        if (endIndex === chunkSize && buffer.length > chunkSize) {
+          let bestSplit = chunkText.length;
+          for (const sep of separators) {
+            const lastIndex = chunkText.lastIndexOf(sep);
+            if (lastIndex > chunkSize * 0.5) {
+              bestSplit = lastIndex + sep.length;
+              break;
+            }
+          }
+          chunkText = chunkText.slice(0, bestSplit);
+        }
+
+        const trimmedChunk = chunkText.trim();
+        if (trimmedChunk.length > 0) {
+          const pageNumber = this.determineChunkPageNumber(globalPosition, pagePositions);
+          
+          if (chunkIndex % 10 === 0) {
+            console.log(`[Chunking] Chunk ${chunkIndex}: position ${globalPosition}, pageNumber: ${pageNumber ?? 'null'}`);
+          }
+          
+          yield {
+            content: trimmedChunk,
+            index: chunkIndex++,
+            metadata: {
+              startChar: globalPosition,
+              endChar: globalPosition + trimmedChunk.length,
+              length: trimmedChunk.length,
+              pageNumber: pageNumber,
+            },
+          };
+        }
+
+        const actualLength = chunkText.length;
+        const slideAmount = Math.max(actualLength - overlap, 0);
+        if (slideAmount === 0) {
+          break;
+        }
+        buffer = buffer.slice(slideAmount);
+        globalPosition += slideAmount;
+
+        if (buffer.length < chunkSize && i + SEGMENT_SIZE < markdown.length) {
+          break;
+        }
+      }
+    }
+
+    if (buffer.trim().length > 0) {
+      const pageNumber = this.determineChunkPageNumber(globalPosition, pagePositions);
+      console.log(`[Chunking] Final chunk ${chunkIndex}: position ${globalPosition}, pageNumber: ${pageNumber ?? 'null'}`);
+      
+      yield {
+        content: buffer.trim(),
+        index: chunkIndex,
+        metadata: {
+          startChar: globalPosition,
+          endChar: globalPosition + buffer.length,
+          length: buffer.length,
+          pageNumber: pageNumber,
+        },
+      };
+    }    
+    console.log(`[Chunking] Stream complete: Generated ${chunkIndex} chunks total`);    
+    console.log(`[Chunking] Stream complete: Generated ${chunkIndex} chunks total`);
+  }
+
+  static async chunkContent(
+    markdown: string,
+    options: ChunkOptions = {}
+  ): Promise<Chunk[]> {
+    const chunks: Chunk[] = [];
+    for await (const chunk of this.chunkContentStream(markdown, options)) {
+      chunks.push(chunk);
+    }
+    return chunks;
+  }
+
   private static extractPageNumbers(content: string): PagePosition[] {
     const pagePositions: PagePosition[] = [];
-
-    const slideRegex = /<!-- Slide number: (\d+) -->/g;
+    
+    const pdfPageRegex = /<!-- Page (\d+) -->/g;
     let match;
+    while ((match = pdfPageRegex.exec(content)) !== null) {
+      pagePositions.push({
+        position: match.index,
+        pageNumber: parseInt(match[1], 10),
+      });
+    }
+    
+    if (pagePositions.length > 0) {
+      console.log(`[Chunking] Found ${pagePositions.length} PDF page markers`);
+      return pagePositions;
+    }
+    
+    const slideRegex = /<!-- Slide number: (\d+) -->/g;
     while ((match = slideRegex.exec(content)) !== null) {
       pagePositions.push({
         position: match.index,
         pageNumber: parseInt(match[1], 10),
       });
     }
+    
     if (pagePositions.length > 0) {
+      console.log(`[Chunking] Found ${pagePositions.length} slide markers`);
       return pagePositions;
     }
-
+    
     const sheetRegex = /^# Sheet (\d+)/gm;
     while ((match = sheetRegex.exec(content)) !== null) {
       pagePositions.push({
         position: match.index,
         pageNumber: parseInt(match[1], 10),
       });
+    }
+    
+    if (pagePositions.length > 0) {
+      console.log(`[Chunking] Found ${pagePositions.length} sheet markers`);
     }
 
     return pagePositions;
@@ -115,49 +237,6 @@ export class ChunkingService {
       }
     }
     
-    return chunks;
-  }
-
-  static async chunkContent(
-    markdown: string,
-    options: ChunkOptions = {}
-  ): Promise<Chunk[]> {
-    const { chunkSize = 4000, overlap = 200 } = options;
-
-    console.log(
-      `[Chunking] Splitting content (${markdown.length} chars) with size=${chunkSize}, overlap=${overlap}`
-    );
-
-    if (!markdown || markdown.trim().length === 0) {
-      return [];
-    }
-
-    // Extract page positions from content
-    const pagePositions = this.extractPageNumbers(markdown);
-
-    // Split the content
-    const rawChunks = this.splitText(markdown, chunkSize, overlap);
-
-    // Create final chunks with page numbers
-    const chunks: Chunk[] = rawChunks.map((rawChunk, index) => {
-      const pageNumber = this.determineChunkPageNumber(
-        rawChunk.startIndex,
-        pagePositions
-      );
-
-      return {
-        content: rawChunk.content,
-        index,
-        metadata: {
-          startChar: rawChunk.startIndex,
-          endChar: rawChunk.startIndex + rawChunk.content.length,
-          length: rawChunk.content.length,
-          pageNumber,
-        },
-      };
-    });
-
-    console.log(`[Chunking] Created ${chunks.length} chunks`);
     return chunks;
   }
 }
