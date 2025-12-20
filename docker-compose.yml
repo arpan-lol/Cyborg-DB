@@ -3,7 +3,7 @@ services:
     image: cyborginc/cyborgdb-service:latest
     container_name: flux-cyborgdb
     env_file:
-      - ./backend/.env.prod
+      - ./.env
     volumes:
       - cyborgdb-data:/home/cyborguser/.cyborgdb
       - ./logs:/app/logs
@@ -14,11 +14,11 @@ services:
     container_name: flux-postgres
     image: postgres:16-alpine
     env_file:
-      - ./backend/.env.prod
+      - ./.env
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U flux"]
+      test: ["CMD-SHELL", "pg_isready -U flux -d fluxdb"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -29,7 +29,7 @@ services:
     build: ./backend/src/scripts
     container_name: flux-python-md-service
     env_file:
-      - ./backend/src/scripts/.env.prod
+      - ./.env
     depends_on:
       - cyborgdb
     networks:
@@ -43,7 +43,7 @@ services:
     ports:
       - "3008:3008"
     env_file:
-      - ./backend/.env.prod
+      - ./.env
     depends_on:
       - postgres
       - md-service
@@ -59,7 +59,7 @@ services:
     ports:
       - "3009:3000"
     env_file:
-      - ./frontend/.env.prod
+      - ./.env
     depends_on:
       - backend
     networks:
