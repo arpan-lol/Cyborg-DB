@@ -7,6 +7,7 @@ Flux AI is a full-stack document Q&A app built for the **CyborgDB Hackathon**. I
 - [Flux AI (Cyborg-DB)](#flux-ai-cyborg-db)
     - [Index](#index)
   - [Screenshots](#screenshots)
+  - [Healthcare \& HIPAA](#healthcare--hipaa)
   - [CyborgDB Highlights](#cyborgdb-highlights)
   - [Tech Stack](#tech-stack)
   - [Key Features](#key-features)
@@ -14,7 +15,6 @@ Flux AI is a full-stack document Q&A app built for the **CyborgDB Hackathon**. I
     - [Container Topology](#container-topology)
     - [File Ingestion Flow (Indexing)](#file-ingestion-flow-indexing)
     - [Chat + Retrieval + Streaming](#chat--retrieval--streaming)
-    - [Data Model (Prisma)](#data-model-prisma)
   - [Quickstart (Docker)](#quickstart-docker)
     - [Prerequisites](#prerequisites)
     - [1) Clone](#1-clone)
@@ -31,6 +31,19 @@ Flux AI is a full-stack document Q&A app built for the **CyborgDB Hackathon**. I
 ![Flux AI – attachment-scoped query + streaming](screenshots/img2.jpeg)
 ![Flux AI – response with citations + engine logs](screenshots/img3.jpeg)
 ![Flux AI – citation-driven file viewer](screenshots/img4.jpeg)
+
+## Healthcare & HIPAA
+
+Flux AI is built for **healthcare document understanding** (e.g., medical reports, discharge summaries, clinical references) with a security model that supports workflows involving **PHI**.
+
+HIPAA note: this project is designed with **HIPAA-aligned security considerations** in mind (encryption, access controls, and minimized data exposure), but HIPAA compliance is ultimately a **program/process** (policies, BAAs, access governance, auditing, retention, incident response). Validate requirements with your compliance/legal team before handling real PHI.
+
+Privacy- and compliance-relevant design choices:
+
+- **Encrypted vector search (CyborgDB)**: embeddings are stored and queried in encrypted CyborgDB indexes.
+- **Per-session isolation**: separate encrypted indexes per session help compartmentalize data.
+- **Scoped retrieval**: attachment selection limits which documents are used for context.
+- **Audit-friendly UX**: “engine events” provide an execution trail for ingestion/retrieval steps.
 
 ## CyborgDB Highlights
 
@@ -136,62 +149,6 @@ sequenceDiagram
   BE-->>FE: SSE done
 ```
 
-### Data Model (Prisma)
-
-```mermaid
-erDiagram
-  User ||--o{ ChatSession : owns
-  ChatSession ||--o{ Message : contains
-  Message }o--o{ Attachment : references
-  Attachment ||--o{ ChunkData : has
-
-  User {
-    int id PK
-    string email UK
-    string googleId UK
-    string name
-    string picture
-    string refreshToken
-    string password
-  }
-
-  ChatSession {
-    string id PK
-    int userId FK
-    string title
-    bytes vectorIndexKey
-  }
-
-  Message {
-    string id PK
-    string sessionId FK
-    string role
-    text content
-    int tokens
-  }
-
-  Attachment {
-    string id PK
-    string messageId FK
-    string type
-    string url
-    string filename
-    string mimeType
-    int size
-    json metadata
-  }
-
-  ChunkData {
-    string id PK
-    string attachmentId FK
-    int chunkIndex
-    text content
-    string vectorId UK
-    int pageNumber
-    int startChar
-    int endChar
-  }
-```
 
 ## Quickstart (Docker)
 
