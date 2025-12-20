@@ -52,7 +52,7 @@ export const useGoogleAuth = () => {
   const { data: config } = useQuery({
     queryKey: ['health', 'config'],
     queryFn: async () => {
-      const response = await fetch(`${API_BASE_URL}/health/config`);
+      const response = await fetch(`${API_BASE_URL}/api/v1/healthcheck/config`);
       if (!response.ok) {
         return { googleOAuthEnabled: false };
       }
