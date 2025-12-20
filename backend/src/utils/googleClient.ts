@@ -5,14 +5,19 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const creds = JSON.parse(
-  fs.readFileSync(path.join(process.cwd(), 'google-creds.json'), 'utf8')
-);
+const credsPath = path.join(process.cwd(), 'google-creds.json');
+let creds: any = null;
 
-export const googleClient = new OAuth2Client(
-  creds.web.client_id,
-  creds.web.client_secret,
-  process.env.REDIRECT_URI
-);
+if (fs.existsSync(credsPath)) {
+  creds = JSON.parse(fs.readFileSync(credsPath, 'utf8'));
+}
 
-export const GOOGLE_CLIENT_ID = creds.web.client_id;
+export const googleClient = creds
+  ? new OAuth2Client(
+      creds.web.client_id,
+      creds.web.client_secret,
+      process.env.REDIRECT_URI
+    )
+  : null;
+
+export const GOOGLE_CLIENT_ID = creds?.web.client_id || null;

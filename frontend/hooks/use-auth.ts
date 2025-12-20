@@ -49,9 +49,25 @@ export const useGoogleAuth = () => {
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3008';
   console.log('[frontend/useGoogleAuth] API_BASE_URL:', API_BASE_URL);
   
+  const { data: config } = useQuery({
+    queryKey: ['health', 'config'],
+    queryFn: async () => {
+      const response = await fetch(`${API_BASE_URL}/health/config`);
+      if (!response.ok) {
+        return { googleOAuthEnabled: false };
+      }
+      return response.json();
+    },
+    staleTime: Infinity,
+  });
+
   const initiateGoogleAuth = () => {
     window.location.href = `${API_BASE_URL}/auth/google`;
   };
 
-  return { initiateGoogleAuth };
+  return { 
+    initiateGoogleAuth,
+    googleOAuthEnabled: config?.googleOAuthEnabled ?? false,
+    isLoading: !config
+  };
 };

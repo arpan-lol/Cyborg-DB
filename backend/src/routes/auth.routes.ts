@@ -14,6 +14,9 @@ const router = Router();
 const FRONTEND_REDIRECT = process.env.FRONTEND_REDIRECT!;
 
 router.get('/google', asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!googleClient) {
+    return res.status(503).json({ error: 'Google OAuth not configured' });
+  }
   const url = googleClient.generateAuthUrl({
     access_type: 'offline',
     prompt: 'consent',
@@ -23,6 +26,9 @@ router.get('/google', asyncHandler(async (req: AuthRequest, res: Response) => {
 }));
 
 router.get('/google/callback', asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!googleClient || !GOOGLE_CLIENT_ID) {
+    return res.status(503).send('Google OAuth not configured');
+  }
   const code = req.query.code as string;
   if (!code) {
     console.error('[auth] Missing authorization code');
@@ -107,6 +113,9 @@ router.post('/refresh', asyncHandler(async (req: AuthRequest, res: Response) => 
   }
 
   try {
+    if (!googleClient || !GOOGLE_CLIENT_ID) {
+      return res.status(503).json({ error: 'Google OAuth not configured' });
+    }
     const user = await prisma.user.findUnique({ where: { id: payload.userId } });
     if (!user || !user.refreshToken) {
       return res.status(401).json({ error: 'No refresh token found' });

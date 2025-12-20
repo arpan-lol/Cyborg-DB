@@ -2,9 +2,10 @@
 
 import { Button } from './ui/button';
 import { useGoogleAuth } from '@/hooks/use-auth';
+import { AlertCircle } from 'lucide-react';
 
 export const OAuthButtons = () => {
-  const { initiateGoogleAuth } = useGoogleAuth();
+  const { initiateGoogleAuth, googleOAuthEnabled, isLoading } = useGoogleAuth();
 
   return (
     <div className="flex flex-col gap-4">
@@ -13,6 +14,7 @@ export const OAuthButtons = () => {
         variant="outline"
         className="w-full cursor-pointer"
         onClick={initiateGoogleAuth}
+        disabled={!googleOAuthEnabled || isLoading}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -26,6 +28,28 @@ export const OAuthButtons = () => {
         </svg>
         Continue with Google
       </Button>
+      {!isLoading && !googleOAuthEnabled && (
+        <div className="flex items-start gap-2 rounded-md border border-yellow-500/50 bg-yellow-500/10 p-3 text-sm text-yellow-600 dark:text-yellow-500">
+          <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-medium mb-1">Google OAuth not configured</p>
+            <p className="text-xs opacity-90">
+              Create a Google OAuth client at{' '}
+              <a 
+                href="https://console.cloud.google.com/apis/credentials" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="underline hover:opacity-80"
+              >
+                Google Cloud Console
+              </a>
+              {' '}and save the credentials JSON as{' '}
+              <code className="bg-yellow-500/20 px-1 rounded">google-creds.json</code>
+              {' '}in the backend directory.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
