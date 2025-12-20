@@ -1,48 +1,53 @@
-# Cyborg-DB (Flux AI)
+# Flux AI (Cyborg-DB)
 
-Flux AI is a full-stack document Q&A application that performs Retrieval-Augmented Generation (RAG) over user-uploaded files, while storing vector embeddings inside an encrypted CyborgDB index.
+Flux AI is a full-stack document Q&A app built for the **CyborgDB Hackathon**. It performs Retrieval-Augmented Generation (RAG) over user-uploaded files and stores embeddings in **encrypted CyborgDB indexes** for secure similarity search.
 
-This repository contains:
-- A Next.js (App Router) frontend UI.
-- A Node.js (Express + TypeScript) backend API.
-- A Python FastAPI microservice that converts files/URLs into Markdown (used for ingestion).
-- Postgres (Prisma) for users/sessions/messages/attachments and chunk metadata.
-- CyborgDB service container for encrypted vector storage and similarity search.
+### Index
 
-## What's Implemented
+- [Screenshots](#screenshots)
+- [CyborgDB Highlights](#cyborgdb-highlights)
+- [Tech Stack](#tech-stack)
+- [Key Features](#key-features)
+- [Architecture](#architecture)
+- [Quickstart (Docker)](#quickstart-docker)
+- [Configuration](#configuration)
+- [Migrations + Seed](#migrations--seed)
+- [Local Development (No Docker)](#local-development-no-docker)
+- [Troubleshooting](#troubleshooting)
 
-**RAG pipeline (document ingestion)**
-- Upload a file to a chat session.
-- Backend queues an in-process job.
-- Python microservice converts the file to Markdown.
-- Backend chunks the Markdown and creates embeddings using Google GenAI embeddings.
-- Embeddings are upserted into a per-session encrypted CyborgDB index.
-- Chunk text + metadata (pageNumber, char offsets) are stored in Postgres.
+## Screenshots
 
-**Chat with streaming responses**
-- Messages are streamed to the client via Server-Sent Events (SSE).
-- If you select attachments, the backend retrieves context using encrypted vector search (CyborgDB) and injects excerpts into the system prompt.
+![Flux AI – session + file panel](screenshots/img1.jpeg)
+![Flux AI – attachment-scoped query + streaming](screenshots/img2.jpeg)
+![Flux AI – response with citations + engine logs](screenshots/img3.jpeg)
+![Flux AI – citation-driven file viewer](screenshots/img4.jpeg)
 
-**Session & attachment UX**
-- Session CRUD (create/list/get/delete).
-- Attachment upload, processing status, and chunk viewer.
-- Backend emits "engine events" (SSE) for logs/notifications.
+## CyborgDB Highlights
 
-**Auth**
-- JWT-based auth with optional Google OAuth callback flow.
-- Guest login flow (creates/uses a `guest@fluxai` user via seed + API).
+This project is designed to highlight CyborgDB capabilities in a practical RAG system:
 
-## Current Features
+- **Encrypted vector storage**: embeddings live inside CyborgDB, not in plaintext tables.
+- **Per-session isolation**: each chat session gets its own encrypted index (`session_<sessionId>`), reducing blast radius and simplifying access control.
+- **Secure retrieval**: similarity search runs against encrypted vectors using an `ENCRYPTION_KEY`-backed index key.
 
-- Encrypted vector search with CyborgDB: per-session index (`ivfflat`, 768-dim) using `ENCRYPTION_KEY`.
-- Multi-format ingestion: PDFs, Office docs (DOCX/PPTX/XLSX), images, and common text formats (based on backend upload allow-list).
-- Background document processing pipeline: markdown conversion (Python service) -> chunking -> embeddings (Google GenAI) -> CyborgDB upsert -> Postgres chunk metadata.
-- Streaming chat: server streams assistant tokens over SSE and persists messages to Postgres.
-- Attachment-scoped RAG: user selects attachments per message; retrieval uses encrypted vector search and injects excerpts into the prompt.
-- Real-time UX telemetry: session "engine events" (SSE) plus per-attachment processing progress stream.
-- Session management: create/list/get/delete chat sessions.
-- Attachment management: upload, processing status, authorized file serving, and chunk viewer endpoint.
-- Authentication flows: guest login and optional Google OAuth (credentials file required), with JWT refresh endpoint.
+## Tech Stack
+
+- **Frontend**: Next.js (App Router), TypeScript, Tailwind CSS
+- **Backend**: Node.js, Express, TypeScript
+- **RAG / LLM**: Google GenAI (embeddings + generation)
+- **Vector store**: CyborgDB (encrypted indexes)
+- **Database**: Postgres + Prisma
+- **Ingestion**: Python FastAPI service (file/URL → Markdown)
+- **Streaming**: Server-Sent Events (SSE)
+
+## Key Features
+
+- **End-to-end RAG ingestion**: upload → convert to Markdown → chunk → embed → encrypted upsert → chunk metadata persisted.
+- **Attachment-scoped retrieval**: users select which files to use; only those documents are searched.
+- **Streaming chat (SSE)**: token streaming to the UI, plus a separate stream of “engine events” for logs/progress.
+- **Multi-format ingestion**: PDFs, Office docs (DOCX/PPTX/XLSX), images, and common text formats (based on backend allow-list).
+- **Chunk viewer + citations**: responses can reference chunks; UI can open the source document.
+- **Auth**: JWT auth, with optional Google OAuth and a **guest login** path.
 
 ## Architecture
 
@@ -178,12 +183,12 @@ erDiagram
   }
 ```
 
-## Clone & Setup
+## Quickstart (Docker)
 
 ### Prerequisites
-- Docker Desktop (recommended for local setup).
-- If running without Docker: Node.js 18+, Python 3.11+, and a Postgres instance.
-- Google GenAI API key for embeddings and generation.
+
+- Docker Desktop
+- Google GenAI API key (for embeddings + generation)
 
 ### 1) Clone
 
@@ -192,7 +197,7 @@ git clone https://github.com/arpan-lol/cyborg-db.git
 cd cyborg-db
 ```
 
-### 2) Configure environment
+### 2) Configuration
 
 Create a `.env` at the repo root:
 
@@ -200,27 +205,20 @@ Create a `.env` at the repo root:
 copy .env.example .env
 ```
 
-Key variables used by the code:
-- `DATABASE_URL` (Postgres connection string)
-- `JWT_SECRET` (used by backend JWT middleware)
-- `FRONTEND_ORIGIN` and `FRONTEND_REDIRECT`
-- `REDIRECT_URI` (Google OAuth callback for backend)
-- `GOOGLE_GENAI_API_KEY` (used by backend for embeddings + Gemini generation, and by the Python MD service optionally)
-- `CYBORG_BASE_URL`, `CYBORGDB_API_KEY` (CyborgDB SDK config)
-- `ENCRYPTION_KEY` (base64; used as the CyborgDB index key)
-- `PYTHON_SERVICE_URL` (backend -> python service)
-- `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_FRONTEND_URL`, `API_URL_INTERNAL` (frontend)
+Required variables (high-level):
 
-**Important notes for Docker Compose on this repo (defaults in `.env.example` may need adjusting):**
-- Frontend is exposed as `http://localhost:3009` (container port 3000).
-- Backend is exposed as `http://localhost:3008`.
-- A typical local Docker setup uses:
-  - `FRONTEND_ORIGIN=http://localhost:3009`
-  - `FRONTEND_REDIRECT=http://localhost:3009/auth/callback`
-  - `NEXT_PUBLIC_API_URL=http://localhost:3008`
-  - `NEXT_PUBLIC_FRONTEND_URL=http://localhost:3009`
+- `DATABASE_URL`
+- `JWT_SECRET`
+- `GOOGLE_GENAI_API_KEY`
+- `CYBORG_BASE_URL`, `CYBORGDB_API_KEY`
+- `ENCRYPTION_KEY` (base64)
 
-**Generate an encryption key (PowerShell):**
+Common local values (Docker Compose):
+
+- Frontend: `http://localhost:3009`
+- Backend: `http://localhost:3008`
+
+Generate an encryption key (PowerShell):
 
 ```powershell
 $bytes = New-Object byte[] 32
@@ -228,35 +226,20 @@ $bytes = New-Object byte[] 32
 [Convert]::ToBase64String($bytes)
 ```
 
-Paste the output into `ENCRYPTION_KEY`.
-
-### 3) (Optional) Google OAuth credentials
-
-The backend expects a Google OAuth client credentials JSON at:
-- `backend/google-creds.json`
-
-The OAuth client's redirect URI must match `REDIRECT_URI` (example: `http://localhost:3008/auth/google/callback`).
-
-If you do not configure OAuth, the UI supports **guest login**.
-
-### 4) Start the stack
+### 3) Start
 
 ```bash
 docker compose up --build
 ```
 
-Services (from the root compose):
+Services (local):
+
 - Frontend: `http://localhost:3009`
 - Backend: `http://localhost:3008`
-- CyborgDB service: internal network (base URL `http://cyborgdb:8000` from containers)
-- Python MD service: internal network (FastAPI on `:3001`)
-- Postgres: internal network
 
-### 5) Run database migrations + seed
+## Migrations + Seed
 
-The backend image includes Prisma schema/migrations, but migrations are not automatically executed on container start.
-
-Run these once after first startup:
+Prisma migrations are not automatically executed on container startup. Run once after the first boot:
 
 ```bash
 docker compose exec backend npx prisma migrate deploy --schema=src/prisma/schema.prisma
@@ -264,88 +247,6 @@ docker compose exec backend npm run prisma:seed
 ```
 
 The seed creates/updates a guest user (`guest@fluxai`).
-
-## Deployment (VM)
-
-This repo is easiest to deploy on a VM using Docker Compose (same layout as local).
-
-### VM prerequisites
-
-- A Linux VM (Ubuntu 22.04/24.04 is a common choice).
-- Docker Engine + Docker Compose plugin installed.
-- Open inbound access for the UI (recommended): TCP `80`/`443` (via reverse proxy) or TCP `3009` directly.
-
-### 1) Install Docker (Ubuntu)
-
-Follow Docker's official installation docs for your distro, then confirm:
-
-```bash
-docker --version
-docker compose version
-```
-
-### 2) Clone and configure
-
-```bash
-git clone https://github.com/arpan-lol/cyborg-db.git
-cd cyborg-db
-cp .env.example .env
-```
-
-Edit `.env` for VM deployment. Common adjustments:
-
-- `FRONTEND_ORIGIN=http://<your-vm-domain-or-ip>` (or `https://...` if using TLS)
-- `FRONTEND_REDIRECT=http://<your-vm-domain-or-ip>/auth/callback`
-- `NEXT_PUBLIC_FRONTEND_URL=http://<your-vm-domain-or-ip>`
-- `NEXT_PUBLIC_API_URL=http://<your-vm-domain-or-ip>:3008` (or your proxied backend URL)
-- Set `GOOGLE_GENAI_API_KEY` and `ENCRYPTION_KEY`
-
-If you are reverse-proxying the frontend only (recommended), keep backend bound to the VM but not exposed publicly by firewall rules.
-
-### 3) Start containers
-
-```bash
-docker compose up --build -d
-docker compose ps
-```
-
-### 4) Apply migrations and seed
-
-```bash
-docker compose exec backend npx prisma migrate deploy --schema=src/prisma/schema.prisma
-docker compose exec backend npm run prisma:seed
-```
-
-### 5) Reverse proxy (recommended)
-
-Recommended setup:
-
-- Public: `80/443` -> reverse proxy -> `frontend:3000` (host port `3009`)
-- Private/internal: backend remains on `3008` (allow only from proxy or trusted IPs)
-
-Example Nginx server block (host-side) proxying the UI:
-
-```nginx
-server {
-  listen 80;
-  server_name your-domain.example;
-
-  location / {
-    proxy_pass http://127.0.0.1:3009;
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-  }
-}
-```
-
-If you also proxy the backend, ensure CORS-related env vars align (`FRONTEND_ORIGIN`) and keep `/chat/.../events` and `/chat/.../stream` working (they use SSE).
-
-### 6) Production notes (hygiene)
-
-- Persisted data is stored in Docker volumes (`postgres_data`, `cyborgdb-data`, `uploads`). Back up volumes if needed.
-- The ingestion job queue is in-memory; avoid restarting the backend during active processing.
-- Monitor logs with `docker compose logs -f backend` and `docker compose logs -f md-service`.
 
 ## Local Development (No Docker)
 
@@ -357,13 +258,15 @@ If you prefer running services directly:
   npm install
   npm run dev
   ```
+
 - Frontend:
   ```bash
   cd frontend
   npm install
   npm run dev
   ```
-- Python MD service:
+
+- Python Markdown service:
   ```bash
   cd backend/src/scripts
   pip install -r requirements.txt
@@ -371,45 +274,17 @@ If you prefer running services directly:
   ```
 
 You will also need:
+
 - A running Postgres matching `DATABASE_URL`.
 - A running CyborgDB service (the repo uses `cyborginc/cyborgdb-service:latest`).
 
-## API Surface (Backend)
-
-Base URL (local): `http://localhost:3008`
-
-**Health**
-- `GET /api/v1/healthcheck` -> `{ status: "ok" }`
-
-**Auth**
-- `GET /auth/google` -> redirects to Google OAuth consent screen
-- `GET /auth/google/callback` -> exchanges code, upserts user, redirects to `FRONTEND_REDIRECT?jwt=...`
-- `POST /auth/refresh` -> refreshes an expired JWT (requires stored Google refresh token)
-- `POST /auth/logout` (JWT required)
-- `GET /auth/me` (JWT required)
-- `POST /auth/guest` -> returns a JWT for guest user
-
-**Chat / Sessions / Attachments**
-- `POST /chat/sessions` (JWT) -> create session
-- `GET /chat/sessions` (JWT) -> list sessions
-- `GET /chat/sessions/:id` (JWT) -> session details + messages
-- `DELETE /chat/sessions/:id` (JWT) -> deletes session and attempts to delete CyborgDB index
-- `GET /chat/sessions/:id/events` (JWT or `?token=`) -> SSE engine events
-- `POST /chat/sessions/:id/messages` (JWT) -> SSE token stream response
-- `POST /chat/upload` (JWT, multipart) -> upload attachment and start processing job
-- `GET /chat/attachments/:attachmentId/status` (JWT)
-- `GET /chat/attachments/:attachmentId/stream` (JWT or `?token=`) -> SSE processing progress
-- `GET /chat/sessions/:sessionId/attachments/:attachmentId/chunks` (JWT) -> returns stored chunks (from Postgres)
-- `GET /chat/uploads/:filename` (JWT) -> serves uploaded file if authorized
-
 ## Encrypted Vector Search (How It Works Here)
 
-- A CyborgDB index is created per chat session:
+- CyborgDB index is created **per chat session**:
   - index name: `session_<sessionId>` (UUID hyphens replaced with underscores)
   - index type: `ivfflat`, dimension `768`
-- The encryption key (`indexKey`) is loaded from `ENCRYPTION_KEY` (base64) and used when creating/loading the index.
-- Only vectors are stored in CyborgDB.
-- Chunk text and metadata are stored in Postgres in `ChunkData`.
+- The encryption key (`indexKey`) is loaded from `ENCRYPTION_KEY` (base64).
+- CyborgDB stores vectors; Postgres stores chunk text + metadata (`ChunkData`).
 
 ## Troubleshooting
 
@@ -423,9 +298,3 @@ Base URL (local): `http://localhost:3008`
   - Ensure `JWT_SECRET` is set.
   - For Google OAuth, ensure `backend/google-creds.json` exists and `REDIRECT_URI` matches the Google Console configuration.
 
-## Repository Structure
-
-- `docker-compose.yml` -> full local stack
-- `backend/` -> Express API, Prisma, CyborgDB integration
-- `backend/src/scripts/` -> Python FastAPI markdown conversion service
-- `frontend/` -> Next.js UI
