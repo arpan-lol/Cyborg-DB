@@ -6,7 +6,7 @@ import {
     SendMessageResponse,
 } from '../../types/chat.types';
 import { GenerationService } from '../../services/llm/generation.service';
-import { logger } from '../../utils/logger.util';
+import { logger } from '../../utils/logger.util.js';
 import { sseService } from '../../services/sse.service';
 import { UnauthorizedError, NotFoundError, ValidationError, ProcessingError } from '../../types/error.types';
 export class MessageController {

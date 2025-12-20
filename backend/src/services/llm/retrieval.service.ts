@@ -1,6 +1,6 @@
 import { dynamicTopK } from '../../config/rag.config';
 import { sseService } from '../sse.service';
-import { logger } from '../../utils/logger.util';
+import { logger } from '../../utils/logger.util.js';
 import { SearchService, SearchResult } from '../cyborg/search.service';
 
 export interface EnhancedContext {

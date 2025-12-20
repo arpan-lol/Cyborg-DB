@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
 import multer from 'multer';
 import { AppError } from '../types/error.types';
-import { logger } from '../utils/logger.util';
+import { logger } from '../utils/logger.util.js';
 
 export const globalErrorHandler: ErrorRequestHandler = (
   error: any,

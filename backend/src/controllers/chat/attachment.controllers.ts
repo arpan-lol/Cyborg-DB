@@ -5,7 +5,7 @@ import { UploadFileResponse } from '../../types/chat.types';
 import path from 'path';
 import { jobQueue } from '../../queue';
 import { sseService } from '../../services/sse.service';
-import { logger } from '../../utils/logger.util';
+import { logger } from '../../utils/logger.util.js';
 import { UnauthorizedError, NotFoundError, ValidationError, ProcessingError } from '../../types/error.types';
 
 export class AttachmentController {

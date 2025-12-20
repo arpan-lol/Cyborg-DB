@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authenticateJWT } from '../middleware/auth';
 import { ChatController } from '../controllers/chat';
 import { upload } from '../config/upload';
-import { asyncHandler } from '../utils/asyncHandler.util';
+import { asyncHandler } from '../utils/asyncHandler.util.js';
 import { Request, Response, NextFunction } from 'express';
 import { AuthRequest } from '../types/express';
 import { verifyJwt } from '../utils/jwt';

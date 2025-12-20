@@ -1,7 +1,7 @@
 import { GoogleGenAI, Content } from '@google/genai';
 import { RetrievalService } from './retrieval.service';
 import { buildPrompt } from './prompts/system.prompt';
-import { logger } from '../../utils/logger.util';
+import { logger } from '../../utils/logger.util.js';
 import { isGeminiError, parseGeminiError, ProcessingError } from '../../types/error.types';
 
 const ai = new GoogleGenAI({

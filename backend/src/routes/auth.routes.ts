@@ -3,9 +3,9 @@ import prisma from '../prisma/client';
 import { googleClient, GOOGLE_CLIENT_ID } from '../utils/googleClient';
 import { signJwt, verifyJwt, decodeJwt } from '../utils/jwt';
 import { authenticateJWT } from '../middleware/auth'
-import { logger } from '../utils/logger.util';
+import { logger } from '../utils/logger.util.js';
 import { ProcessingError } from '../types/error.types';
-import { asyncHandler } from '../utils/asyncHandler.util';
+import { asyncHandler } from '../utils/asyncHandler.util.js';
 
 import { Response } from 'express';
 import { AuthRequest } from '../types/express';

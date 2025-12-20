@@ -6,7 +6,7 @@ import {
   CreateSessionResponse,
   SessionDetails,
 } from '../../types/chat.types';
-import { logger } from '../../utils/logger.util';
+import { logger } from '../../utils/logger.util.js';
 import { UnauthorizedError, NotFoundError, ProcessingError } from '../../types/error.types';
 import { IndexService } from 'src/services/cyborg/index.service';
 

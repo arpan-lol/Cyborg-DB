@@ -1,6 +1,6 @@
 import { Chunk } from './chunking.service';
 import { GoogleGenAI } from '@google/genai';
-import { logger } from '../utils/logger.util';
+import { logger } from '../utils/logger.util.js';
 import { isGeminiError, parseGeminiError, ProcessingError } from '../types/error.types';
 
 export interface Embedding {
