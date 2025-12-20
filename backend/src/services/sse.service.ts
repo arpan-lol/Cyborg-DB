@@ -5,9 +5,11 @@ import { eventsController } from '../controllers/chat/events.controllers';
 interface ProgressClient {
   res: Response;
   attachmentId: string;
+  keepAliveTimer?: NodeJS.Timeout;
 }
 class SSEService {
   private progressClients: Map<string, ProgressClient[]> = new Map();
+  private readonly KEEP_ALIVE_INTERVAL = 15000;
 
   private setupSSEHeaders(res: Response) {
     const origin = process.env.FRONTEND_ORIGIN || 'https://cyborg.arpantaneja.dev';
@@ -17,6 +19,7 @@ class SSEService {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
   }
 
   private sendSSE(res: Response, data: any): boolean {
@@ -33,8 +36,9 @@ class SSEService {
   addProgressClient(attachmentId: string, res: Response) {
     this.setupSSEHeaders(res);
 
+    const client: ProgressClient = { res, attachmentId };
     const clients = this.progressClients.get(attachmentId) || [];
-    clients.push({ res, attachmentId });
+    clients.push(client);
     this.progressClients.set(attachmentId, clients);
 
     console.log(`[SSE] Client connected for attachment: ${attachmentId} (total: ${clients.length})`);
@@ -44,7 +48,21 @@ class SSEService {
       message: 'indexing...',
     });
 
+    client.keepAliveTimer = setInterval(() => {
+      try {
+        res.write(':keep-alive\n\n');
+      } catch (error) {
+        console.error(`[SSE] Keep-alive failed for attachment ${attachmentId}`);
+        this.removeProgressClient(attachmentId, res);
+      }
+    }, this.KEEP_ALIVE_INTERVAL);
+
     res.on('close', () => {
+      this.removeProgressClient(attachmentId, res);
+    });
+
+    res.on('error', (error) => {
+      console.error(`[SSE] Connection error for attachment ${attachmentId}:`, error);
       this.removeProgressClient(attachmentId, res);
     });
   }
@@ -52,6 +70,11 @@ class SSEService {
   private removeProgressClient(attachmentId: string, res: Response) {
     const clients = this.progressClients.get(attachmentId);
     if (!clients) return;
+
+    const clientToRemove = clients.find(client => client.res === res);
+    if (clientToRemove?.keepAliveTimer) {
+      clearInterval(clientToRemove.keepAliveTimer);
+    }
 
     const filtered = clients.filter(client => client.res !== res);
     

@@ -7,16 +7,19 @@ interface EventClient {
   res: Response;
   sessionId: string;
   userId: number;
+  keepAliveTimer?: NodeJS.Timeout;
 }
 
 class EventsController {
   private clients: Map<string, EventClient[]> = new Map();
+  private readonly KEEP_ALIVE_INTERVAL = 15000;
 
   private setupSSEHeaders(res: Response) {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
   }
 
   private sendSSE(res: Response, data: any): boolean {
@@ -64,7 +67,21 @@ class EventsController {
       timestamp: new Date().toISOString(),
     });
 
+    client.keepAliveTimer = setInterval(() => {
+      try {
+        res.write(':keep-alive\n\n');
+      } catch (error) {
+        console.error(`[EventsController] Keep-alive failed for session ${sessionId}`);
+        this.removeClient(sessionId, res);
+      }
+    }, this.KEEP_ALIVE_INTERVAL);
+
     res.on('close', () => {
+      this.removeClient(sessionId, res);
+    });
+
+    res.on('error', (error) => {
+      console.error(`[EventsController] Connection error for session ${sessionId}:`, error);
       this.removeClient(sessionId, res);
     });
   };
@@ -72,6 +89,11 @@ class EventsController {
   private removeClient(sessionId: string, res: Response) {
     const clients = this.clients.get(sessionId);
     if (!clients) return;
+
+    const clientToRemove = clients.find(client => client.res === res);
+    if (clientToRemove?.keepAliveTimer) {
+      clearInterval(clientToRemove.keepAliveTimer);
+    }
 
     const filtered = clients.filter(client => client.res !== res);
     
