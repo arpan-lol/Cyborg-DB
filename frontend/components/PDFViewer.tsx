@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Loader2 } from 'lucide-react';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
+import { useAuthenticatedUrl } from '@/lib/use-authenticated-url';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -24,14 +25,19 @@ interface PDFViewerProps {
 export default function PDFViewer({ fileUrl, currentPage, onPageChange }: PDFViewerProps) {
   const [numPages, setNumPages] = useState<number>(0);
   const [scale, setScale] = useState<number>(SCALE_DEFAULT);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { blobUrl, loading, error: fetchError } = useAuthenticatedUrl(fileUrl);
 
   useEffect(() => {
-    setLoading(true);
     setError(null);
     setNumPages(0);
   }, [fileUrl]);
+
+  useEffect(() => {
+    if (fetchError) {
+      setError(fetchError);
+    }
+  }, [fetchError]);
 
   useEffect(() => {
     if (numPages > 0 && currentPage > numPages) {
@@ -43,14 +49,12 @@ export default function PDFViewer({ fileUrl, currentPage, onPageChange }: PDFVie
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
-    setLoading(false);
     setError(null);
   }
 
   function onDocumentLoadError(err: Error) {
     console.error('[PDFViewer] Load error:', err);
     setError(err.message || 'Failed to load PDF');
-    setLoading(false);
   }
 
   function previousPage() {
@@ -89,9 +93,9 @@ export default function PDFViewer({ fileUrl, currentPage, onPageChange }: PDFVie
             </Button>
           </div>
         )}
-        {!error && (
+        {!error && !loading && blobUrl && (
           <Document
-            file={fileUrl}
+            file={blobUrl}
             onLoadSuccess={onDocumentLoadSuccess}
             onLoadError={onDocumentLoadError}
             loading={<Loader2 className="h-8 w-8 animate-spin" />}

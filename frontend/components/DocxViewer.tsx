@@ -6,6 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
+import { fetchWithAuth } from '@/lib/fetch-utils';
 
 interface DocxViewerProps {
   fileUrl: string;
@@ -22,7 +23,7 @@ export default function DocxViewer({ fileUrl, filename }: DocxViewerProps) {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(fileUrl);
+        const response = await fetchWithAuth(fileUrl);
         if (!response.ok) throw new Error('Failed to load document');
         
         const arrayBuffer = await response.arrayBuffer();

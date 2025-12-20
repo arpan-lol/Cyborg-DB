@@ -42,6 +42,9 @@ router.get('/attachments/:attachmentId/status', authenticateJWT, asyncHandler(Ch
 router.get('/attachments/:attachmentId/stream', authenticateToken, asyncHandler(ChatController.streamAttachmentStatus));
 router.get('/sessions/:sessionId/attachments/:attachmentId/chunks', authenticateJWT, asyncHandler(ChatController.getAttachmentChunks));
 
+// File serving
+router.get('/uploads/:filename', authenticateJWT, asyncHandler(ChatController.serveFile));
+
 // Semantic search
 router.post('/sessions/:id/search', authenticateJWT, asyncHandler(ChatController.searchSession));
 

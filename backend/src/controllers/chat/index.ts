@@ -3,6 +3,7 @@ import { MessageController } from './message.controllers';
 import { AttachmentController } from './attachment.controllers';
 import { SearchController } from './search.controllers';
 import { eventsController } from './events.controllers';
+import { FileController } from './file.controllers';
 
 export const ChatController = {
   // Session methods
@@ -22,6 +23,9 @@ export const ChatController = {
   deleteAttachment: AttachmentController.deleteAttachment,
   getAttachmentChunks: AttachmentController.getAttachmentChunks,
 
+  // File serving
+  serveFile: FileController.serveFile,
+
   // Search methods
   searchSession: SearchController.searchSession,
 
@@ -34,3 +38,4 @@ export { MessageController } from './message.controllers';
 export { AttachmentController } from './attachment.controllers';
 export { SearchController } from './search.controllers';
 export { eventsController } from './events.controllers';
+export { FileController } from './file.controllers';

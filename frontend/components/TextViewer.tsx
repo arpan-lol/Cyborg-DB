@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Copy, Download, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { fetchWithAuth } from '@/lib/fetch-utils';
 
 interface TextViewerProps {
   fileUrl: string;
@@ -22,7 +23,7 @@ export default function TextViewer({ fileUrl, filename }: TextViewerProps) {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(fileUrl);
+        const response = await fetchWithAuth(fileUrl);
         if (!response.ok) throw new Error('Failed to load file');
         const text = await response.text();
         setContent(text);

@@ -478,7 +478,7 @@ export default function ChatSessionPage() {
       const fileToUse = attachment.storedFilename || attachment.filename;
       setSelectedPDF({
         filename: attachment.filename,
-        url: `${baseUrl}/dashboard/sessions/uploads/${encodeURIComponent(fileToUse)}`,
+        url: `${baseUrl}/chat/uploads/${encodeURIComponent(fileToUse)}`,
         targetPage: page,
         type: attachment.type,
       });
@@ -494,7 +494,7 @@ export default function ChatSessionPage() {
     const fileToUse = attachment.storedFilename || attachment.filename;
     setSelectedPDF({
       filename: attachment.filename,
-      url: `${baseUrl}/dashboard/sessions/uploads/${encodeURIComponent(fileToUse)}`,
+      url: `${baseUrl}/chat/uploads/${encodeURIComponent(fileToUse)}`,
       type: attachment.type,
     });
   };

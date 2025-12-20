@@ -3,8 +3,8 @@
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ZoomIn, ZoomOut, RotateCw, Maximize2 } from 'lucide-react';
-import Image from 'next/image';
+import { ZoomIn, ZoomOut, RotateCw, Maximize2, Loader2 } from 'lucide-react';
+import { useAuthenticatedUrl } from '@/lib/use-authenticated-url';
 
 interface ImageViewerProps {
   fileUrl: string;
@@ -12,6 +12,24 @@ interface ImageViewerProps {
 }
 
 export default function ImageViewer({ fileUrl, filename }: ImageViewerProps) {
+  const { blobUrl, loading, error } = useAuthenticatedUrl(fileUrl);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error || !blobUrl) {
+    return (
+      <div className="flex items-center justify-center h-full text-muted-foreground">
+        <p>{error || 'Failed to load image'}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full relative">
       <TransformWrapper
@@ -28,7 +46,7 @@ export default function ImageViewer({ fileUrl, filename }: ImageViewerProps) {
                 contentClass="flex items-center justify-center"
               >
                 <img
-                  src={fileUrl}
+                  src={blobUrl}
                   alt={filename}
                   className="max-w-full max-h-full object-contain"
                   style={{ imageRendering: 'auto' }}

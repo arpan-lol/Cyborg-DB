@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { fetchWithAuth } from '@/lib/fetch-utils';
 
 interface SpreadsheetViewerProps {
   fileUrl: string;
@@ -24,7 +25,7 @@ export default function SpreadsheetViewer({ fileUrl, filename }: SpreadsheetView
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(fileUrl);
+        const response = await fetchWithAuth(fileUrl);
         if (!response.ok) throw new Error('Failed to load spreadsheet');
         
         const arrayBuffer = await response.arrayBuffer();
