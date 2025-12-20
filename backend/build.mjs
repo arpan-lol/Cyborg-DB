@@ -17,9 +17,13 @@ await build({
   external: ["google-creds.json"]
 });
 
-fs.copyFileSync(
-  path.join(__dirname, "google-creds.json"),
-  path.join(__dirname, "dist/google-creds.json")
-);
-
-console.log("Copied google-creds.json -> dist/");
+const googleCredsPath = path.join(__dirname, "google-creds.json");
+if (fs.existsSync(googleCredsPath)) {
+  fs.copyFileSync(
+    googleCredsPath,
+    path.join(__dirname, "dist/google-creds.json")
+  );
+  console.log("Copied google-creds.json -> dist/");
+} else {
+  console.log("google-creds.json not found - skipping (Google OAuth will be disabled)");
+}
