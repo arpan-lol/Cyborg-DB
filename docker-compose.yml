@@ -2,8 +2,6 @@ services:
   cyborgdb:
     image: cyborginc/cyborgdb-service:latest
     container_name: flux-cyborgdb
-    ports:
-      - "3007:8000"
     env_file:
       - ./backend/.env.prod
     volumes:
@@ -43,7 +41,7 @@ services:
     build: ./backend
     container_name: flux-backend
     ports:
-      - "3008:3006"
+      - "3008:3008"
     env_file:
       - ./backend/.env.prod
     depends_on:
