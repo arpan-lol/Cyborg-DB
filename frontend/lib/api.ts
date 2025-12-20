@@ -8,9 +8,9 @@ class ApiClient {
 
   private getBaseURL() {
     if (typeof window === 'undefined') {
-      return process.env.API_URL_INTERNAL || 'http://backend:3006';
+      return process.env.API_URL_INTERNAL || 'http://backend:3008';
     }
-    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3006';
+    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3008';
   }
 
 

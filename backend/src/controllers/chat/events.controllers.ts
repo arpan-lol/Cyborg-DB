@@ -60,7 +60,7 @@ class EventsController {
       type: 'notification',
       scope: 'session',
       sessionId,
-      message: 'Connected to session events',
+      message: 'Connected to logs',
       timestamp: new Date().toISOString(),
     });
 

@@ -7,6 +7,7 @@ import { jobQueue } from '../../queue';
 import { sseService } from '../../services/sse.service';
 import { logger } from '../../utils/logger.util.js';
 import { UnauthorizedError, NotFoundError, ValidationError, ProcessingError } from '../../types/error.types';
+import { SearchService } from '../../services/cyborg/search.service';
 
 export class AttachmentController {
   static async uploadFile(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
@@ -268,6 +269,53 @@ export class AttachmentController {
       logger.error('AttachmentController', 'Error deleting attachment', error instanceof Error ? error : undefined, { attachmentId, userId });
       if (error instanceof NotFoundError || error instanceof UnauthorizedError) throw error;
       next(new ProcessingError('Failed to delete attachment'));
+    }
+  }
+
+  static async getAttachmentChunks(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw new UnauthorizedError();
+    }
+
+    const { sessionId, attachmentId } = req.params;
+
+    try {
+      const session = await prisma.chatSession.findUnique({
+        where: { id: sessionId, userId },
+      });
+
+      if (!session) {
+        throw new NotFoundError('Session not found');
+      }
+
+      const attachment = await prisma.attachment.findUnique({
+        where: { id: attachmentId },
+        select: {
+          id: true,
+          filename: true,
+          metadata: true,
+        },
+      });
+
+      if (!attachment) {
+        throw new NotFoundError('Attachment not found');
+      }
+
+      const chunks = await SearchService.getAllChunks(sessionId, attachmentId);
+
+      logger.info('AttachmentController', `Retrieved ${chunks.length} chunks for attachment`, { attachmentId, sessionId });
+
+      return res.status(200).json({
+        attachmentId: attachment.id,
+        filename: attachment.filename,
+        chunks: chunks,
+        totalChunks: chunks.length,
+      });
+    } catch (error) {
+      logger.error('AttachmentController', 'Error fetching attachment chunks', error instanceof Error ? error : undefined, { attachmentId, sessionId, userId });
+      if (error instanceof NotFoundError || error instanceof UnauthorizedError) throw error;
+      next(new ProcessingError('Failed to fetch attachment chunks'));
     }
   }
 }

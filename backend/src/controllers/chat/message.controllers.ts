@@ -8,6 +8,7 @@ import {
 import { GenerationService } from '../../services/llm/generation.service';
 import { logger } from '../../utils/logger.util.js';
 import { sseService } from '../../services/sse.service';
+import { eventsController } from './events.controllers';
 import { UnauthorizedError, NotFoundError, ValidationError, ProcessingError } from '../../types/error.types';
 export class MessageController {
     static async message(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
@@ -54,6 +55,13 @@ export class MessageController {
                 },
             });
 
+            eventsController.sendEvent(sessionId, {
+                type: 'notification',
+                scope: 'session',
+                sessionId,
+                message: 'Processing your message...',
+            });
+
             // Update session timestamp
             await prisma.chatSession.update({
                 where: { id: sessionId },
@@ -78,9 +86,25 @@ export class MessageController {
                 content: msg.content,
             }));
 
+            eventsController.sendEvent(sessionId, {
+                type: 'notification',
+                scope: 'session',
+                sessionId,
+                message: attachmentIds && attachmentIds.length > 0 
+                    ? `Retrieving context from ${attachmentIds.length} document(s)...`
+                    : 'Generating response...',
+            });
+
             let fullResponse = '';
             try {
                 let retrievalQuery = content.trim()
+
+                eventsController.sendEvent(sessionId, {
+                    type: 'notification',
+                    scope: 'session',
+                    sessionId,
+                    message: 'Streaming response from LLM...',
+                });
 
                 const stream = GenerationService.streamResponse(
                     sessionId,
@@ -102,6 +126,13 @@ export class MessageController {
                         content: fullResponse,
                         tokens: fullResponse.length,
                     },
+                });
+
+                eventsController.sendEvent(sessionId, {
+                    type: 'success',
+                    scope: 'session',
+                    sessionId,
+                    message: `Response generated (${fullResponse.length} chars)`,
                 });
 
                 res.write(

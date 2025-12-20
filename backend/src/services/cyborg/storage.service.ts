@@ -2,6 +2,7 @@ import { getClient } from './client';
 import { Embedding } from '../embedding.service';
 import { IndexService } from './index.service';
 import { PrismaClient } from '@prisma/client';
+import { sseService } from '../sse.service';
 
 const prisma = new PrismaClient();
 
@@ -53,6 +54,20 @@ export class StorageService {
       return;
     }
 
+    const session = await prisma.chatSession.findUnique({
+      where: { id: sessionId },
+      select: { userId: true }
+    });
+
+    if (session) {
+      sseService.sendEngineEvent(sessionId, session.userId, {
+        type: 'notification',
+        scope: 'session',
+        sessionId,
+        message: `Inserting ${embeddings.length} vectors into encrypted index...`,
+      });
+    }
+
     await this.storeEmbeddings(sessionId, attachmentId, embeddings, filename);
     console.log(
       `[CyborgDB] Stored ${embeddings.length} embeddings for attachment ${attachmentId} in session ${sessionId}`
@@ -85,6 +100,20 @@ export class StorageService {
 
     await index.upsert({ items });
 
+    const session = await prisma.chatSession.findUnique({
+      where: { id: sessionId },
+      select: { userId: true }
+    });
+
+    if (session) {
+      sseService.sendEngineEvent(sessionId, session.userId, {
+        type: 'success',
+        scope: 'session',
+        sessionId,
+        message: `Upserted ${items.length} encrypted vectors to index ${indexName}`,
+      });
+    }
+
     const chunkDataRecords = embeddings.map((embedding) => ({
       id: this.generateVectorId(attachmentId, embedding.chunkIndex),
       attachmentId: attachmentId,
@@ -100,6 +129,15 @@ export class StorageService {
       data: chunkDataRecords,
       skipDuplicates: true, 
     });
+
+    if (session) {
+      sseService.sendEngineEvent(sessionId, session.userId, {
+        type: 'success',
+        scope: 'session',
+        sessionId,
+        message: `Stored ${chunkDataRecords.length} chunk metadata records in PostgreSQL`,
+      });
+    }
 
     if (embeddings.length > 0 && embeddings[0].metadata?.pageNumber) {
       console.log(
@@ -133,7 +171,21 @@ export class StorageService {
       return;
     }
 
+    const session = await prisma.chatSession.findUnique({
+      where: { id: sessionId },
+      select: { userId: true }
+    });
+
     const vectorIds = chunks.map((c) => c.vectorId);
+
+    if (session) {
+      sseService.sendEngineEvent(sessionId, session.userId, {
+        type: 'notification',
+        scope: 'session',
+        sessionId,
+        message: `Deleting ${vectorIds.length} vectors from encrypted index...`,
+      });
+    }
 
     const index = await client.loadIndex({indexName, indexKey});
     await index.delete({ ids: vectorIds });
@@ -141,6 +193,15 @@ export class StorageService {
     await prisma.chunkData.deleteMany({
       where: { attachmentId },
     });
+
+    if (session) {
+      sseService.sendEngineEvent(sessionId, session.userId, {
+        type: 'success',
+        scope: 'session',
+        sessionId,
+        message: `Deleted ${vectorIds.length} vectors from Cyborg DB`,
+      });
+    }
 
     console.log(
       `[CyborgDB] Deleted ${vectorIds.length} vectors for attachment ${attachmentId}`

@@ -40,6 +40,7 @@ router.post('/sessions/:id/messages', authenticateJWT, asyncHandler(ChatControll
 router.post('/upload', authenticateJWT, upload.single('file'), asyncHandler(ChatController.uploadFile));
 router.get('/attachments/:attachmentId/status', authenticateJWT, asyncHandler(ChatController.getAttachmentStatus));
 router.get('/attachments/:attachmentId/stream', authenticateToken, asyncHandler(ChatController.streamAttachmentStatus));
+router.get('/sessions/:sessionId/attachments/:attachmentId/chunks', authenticateJWT, asyncHandler(ChatController.getAttachmentChunks));
 
 // Semantic search
 router.post('/sessions/:id/search', authenticateJWT, asyncHandler(ChatController.searchSession));

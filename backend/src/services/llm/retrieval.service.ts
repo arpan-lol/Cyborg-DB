@@ -1,7 +1,9 @@
 import { dynamicTopK } from '../../config/rag.config';
 import { sseService } from '../sse.service';
+import { eventsController } from '../../controllers/chat/events.controllers';
 import { logger } from '../../utils/logger.util.js';
 import { SearchService, SearchResult } from '../cyborg/search.service';
+import prisma from '../../prisma/client';
 
 export interface EnhancedContext {
   content: string;
@@ -23,7 +25,30 @@ export class RetrievalService {
         return [];
       }
 
+      const session = await prisma.chatSession.findUnique({
+        where: { id: sessionId },
+        select: { userId: true }
+      });
+
+      if (session) {
+        eventsController.sendEvent(sessionId, {
+          type: 'notification',
+          scope: 'session',
+          sessionId,
+          message: `Starting context retrieval from ${attachmentIds.length} document(s)...`,
+        });
+      }
+
       const ctx = await this.vectorSearch(sessionId, query, attachmentIds);
+
+      if (session) {
+        eventsController.sendEvent(sessionId, {
+          type: 'success',
+          scope: 'session',
+          sessionId,
+          message: `Retrieved ${ctx.length} relevant context chunks`,
+        });
+      }
 
       return ctx;
     } catch (error) {
@@ -46,6 +71,20 @@ export class RetrievalService {
       `[Retrieval] Vector search on ${attachmentIds.length} attachment(s) with topK=${totalTopK} (${topKPerDoc} per doc)`
     );
 
+    const session = await prisma.chatSession.findUnique({
+      where: { id: sessionId },
+      select: { userId: true }
+    });
+
+    if (session) {
+      eventsController.sendEvent(sessionId, {
+        type: 'notification',
+        scope: 'session',
+        sessionId,
+        message: `Performing ${attachmentIds.length} parallel vector search(es) (${topKPerDoc} chunks each)...`,
+      });
+    }
+
     const promises = attachmentIds.map((attachmentId) =>
       SearchService.search(sessionId, query, topKPerDoc, attachmentId) 
     );
@@ -57,6 +96,20 @@ export class RetrievalService {
     console.log(
       `[Retrieval] Retrieved ${topResults.length} context chunks from ${attachmentIds.length} attachments`
     );
+
+    if (session) {
+      const uniqueFiles = [...new Set(topResults.map(r => r.filename))];
+      eventsController.sendEvent(sessionId, {
+        type: 'success',
+        scope: 'session',
+        sessionId,
+        message: `Ranked and selected top ${topResults.length} chunks for context`,
+        data: {
+          title: 'Context Sources',
+          body: uniqueFiles.map(f => `${f} (${topResults.filter(r => r.filename === f).length} chunks)`)
+        }
+      });
+    }
 
     return topResults.map((r) => ({
       content: r.content,

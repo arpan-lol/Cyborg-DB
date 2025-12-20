@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { setJwtCookie } from '@/lib/auth-cookies';
 
-const BACKEND_URL = process.env.API_URL_INTERNAL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3006';
+const BACKEND_URL = process.env.API_URL_INTERNAL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3008';
 
 export async function POST() {
   try {

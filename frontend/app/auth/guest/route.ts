@@ -4,7 +4,7 @@ import { setJwtCookie } from '@/lib/auth-cookies';
 export async function POST() {
   try {
     console.log('[auth/guest] Attempting guest login');
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3006'}/auth/guest`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3008'}/auth/guest`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include', // Important for cookies

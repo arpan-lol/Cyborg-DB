@@ -20,6 +20,7 @@ export const ChatController = {
   getAttachmentStatus: AttachmentController.getAttachmentStatus,
   streamAttachmentStatus: AttachmentController.streamAttachmentStatus,
   deleteAttachment: AttachmentController.deleteAttachment,
+  getAttachmentChunks: AttachmentController.getAttachmentChunks,
 
   // Search methods
   searchSession: SearchController.searchSession,

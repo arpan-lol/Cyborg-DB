@@ -125,7 +125,6 @@ export default function LogsPanel({ logs, isDocumentOpen, sessionId }: LogsPanel
           onOpenChange={setChunkViewerOpen}
           sessionId={sessionId}
           attachmentId={selectedLog.attachmentId}
-          filename={selectedLog.message.split(' ')[0]}
         />
       )}
     </div>

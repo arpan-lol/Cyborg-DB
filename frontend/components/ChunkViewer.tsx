@@ -13,6 +13,11 @@ interface Chunk {
   id: string;
   content: string;
   index: number;
+  metadata?: {
+    pageNumber?: number;
+    startChar?: number;
+    endChar?: number;
+  };
 }
 
 interface ChunkViewerProps {
@@ -24,17 +29,18 @@ interface ChunkViewerProps {
 }
 
 async function fetchChunks(sessionId: string, attachmentId: string): Promise<Chunk[]> {
-  const response = await api.post(`/chat/sessions/${sessionId}/chunks`, { attachmentId });
+  const response = await api.get(`/chat/sessions/${sessionId}/attachments/${attachmentId}/chunks`);
 
   if (!response.ok) {
     throw new Error('Failed to fetch chunks');
   }
 
   const data = await response.json();
-  return data.chunks.map((chunk: any, index: number) => ({
-    id: chunk.id || `chunk-${index}`,
+  return data.chunks.map((chunk: any, idx: number) => ({
+    id: `chunk-${chunk.index}`,
     content: chunk.content,
-    index: index
+    index: chunk.index,
+    metadata: chunk.metadata
   }));
 }
 
@@ -81,7 +87,7 @@ export default function ChunkViewer({ open, onOpenChange, sessionId, attachmentI
         <DialogHeader>
           <DialogTitle className="truncate">
             {selectedChunk 
-              ? `Chunk ${selectedChunk.index} of ${(chunks?.length ?? 0) - 1}`
+              ? `Chunk ${selectedChunk.index + 1} of ${chunks?.length ?? 0}`
               : `Document Chunks${filename ? ` - ${filename}` : ''}`
             }
           </DialogTitle>
@@ -130,6 +136,11 @@ export default function ChunkViewer({ open, onOpenChange, sessionId, attachmentI
                 </div>
                 <ScrollArea className="flex-1 border rounded-md overflow-auto">
                   <div className="p-4">
+                    {selectedChunk.metadata?.pageNumber && (
+                      <div className="mb-3 text-sm text-muted-foreground">
+                        Page {selectedChunk.metadata.pageNumber}
+                      </div>
+                    )}
                     <pre className="text-xs font-mono whitespace-pre-wrap break-words">
                       {selectedChunk.content}
                     </pre>

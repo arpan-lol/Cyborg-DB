@@ -8,7 +8,7 @@ import chatRoutes from './routes/chat.routes.js';
 import { Orchestrator } from './utils/orchestrator.util.js';
 
 const app = express();
-const PORT = process.env.PORT || '3008';
+const PORT = '3008';
 
 app.use(cors({
   origin: process.env.FRONTEND_ORIGIN || 'http://localhost:3000',

@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import type { SSEMessage } from '@/lib/types'
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3006'
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3008'
 
 export const useStreamMessage = () => {
   const [isStreaming, setIsStreaming] = useState(false)

@@ -28,7 +28,21 @@ async function processFile(attachmentId: string, userId: number, sessionId: stri
 
     console.log(`[Orchestrator] Processing: ${attachment.filename}`);
 
+    sseService.sendEngineEvent(sessionId, userId, {
+      type: 'notification',
+      scope: 'session',
+      sessionId,
+      message: 'Initializing database index...',
+    });
+
     await IndexService.initializeIndex(sessionId);
+
+    sseService.sendEngineEvent(sessionId, userId, {
+      type: 'success',
+      scope: 'session',
+      sessionId,
+      message: 'Database index ready',
+    });
 
     sseService.sendProgress(attachmentId, {
       status: 'processing',
@@ -46,6 +60,13 @@ async function processFile(attachmentId: string, userId: number, sessionId: stri
     });
     const markdown = await IngestionService.convertToMarkdown(attachment.url);
 
+    sseService.sendEngineEvent(sessionId, userId, {
+      type: 'success',
+      scope: 'session',
+      sessionId,
+      message: `Converted ${attachment.filename} to markdown (${markdown.length} chars)`,
+    });
+
     console.log('[Orchestrator] Step 2: Chunking content...');
     sseService.sendProgress(attachmentId, {
       status: 'processing',
@@ -58,6 +79,13 @@ async function processFile(attachmentId: string, userId: number, sessionId: stri
       overlap: 200,
     });
 
+    sseService.sendEngineEvent(sessionId, userId, {
+      type: 'success',
+      scope: 'session',
+      sessionId,
+      message: `Created ${chunks.length} chunks from document`,
+    });
+
     console.log('[Orchestrator] Step 3: Generating embeddings...');
     sseService.sendProgress(attachmentId, {
       status: 'processing',
@@ -67,6 +95,13 @@ async function processFile(attachmentId: string, userId: number, sessionId: stri
     });
     const embeddings = await EmbeddingService.generateEmbeddings(chunks);
 
+    sseService.sendEngineEvent(sessionId, userId, {
+      type: 'success',
+      scope: 'session',
+      sessionId,
+      message: `Generated ${embeddings.length} vector embeddings`,
+    });
+
     console.log('[Orchestrator] Step 4: Storing vectors...');
     sseService.sendProgress(attachmentId, {
       status: 'processing',
@@ -74,7 +109,24 @@ async function processFile(attachmentId: string, userId: number, sessionId: stri
       message: 'Storing vectors in database...',
       progress: 90,
     });
+
+    sseService.sendEngineEvent(sessionId, userId, {
+      type: 'notification',
+      scope: 'session',
+      sessionId,
+      message: `Storing ${embeddings.length} vectors in encrypted Cyborg DB...`,
+    });
+
     await StorageService.storeVectors(sessionId, attachmentId, embeddings, attachment.filename);
+
+    sseService.sendEngineEvent(sessionId, userId, {
+      type: 'success',
+      scope: 'session',
+      sessionId,
+      message: `Successfully stored ${embeddings.length} vectors in Cyborg DB`,
+      attachmentId,
+      actionType: 'view-chunks',
+    });
 
     await prisma.attachment.update({
       where: { id: attachmentId },

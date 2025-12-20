@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import prisma from '../prisma/client';
+import { eventsController } from '../controllers/chat/events.controllers';
 
 interface ProgressClient {
   res: Response;
@@ -87,6 +88,13 @@ class SSEService {
 
     this.progressClients.delete(attachmentId);
     console.log(`[SSE] Closed all connections for ${attachmentId}`);
+  }
+
+  sendEngineEvent(sessionId: string, userId: number, event: any) {
+    eventsController.sendEvent(sessionId, {
+      ...event,
+      timestamp: event.timestamp || new Date().toISOString(),
+    });
   }
 }
 

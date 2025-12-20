@@ -34,6 +34,6 @@ COPY --from=builder /app/src/prisma ./src/prisma
 
 COPY google-creds.json ./google-creds.json
 
-EXPOSE 3006
+EXPOSE 3008
 
 CMD ["npm", "start"]

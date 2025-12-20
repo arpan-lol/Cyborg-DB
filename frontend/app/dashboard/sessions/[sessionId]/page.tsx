@@ -61,7 +61,7 @@ export default function ChatSessionPage() {
     console.log('[SSE] Connecting to stream for:', attachmentId, filename);
     activeStreamsRef.current.add(attachmentId);
 
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3006';
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3008';
     
     let token: string | null = null;
     try {
@@ -474,7 +474,7 @@ export default function ChatSessionPage() {
   const handleCitationClick = (filename: string, page?: number) => {
     const attachment = sessionAttachments?.find((att: any) => att.filename === filename);
     if (attachment) {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3006';
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3008';
       const fileToUse = attachment.storedFilename || attachment.filename;
       setSelectedPDF({
         filename: attachment.filename,
@@ -490,7 +490,7 @@ export default function ChatSessionPage() {
   };
 
   const handleDocumentClick = (attachment: any) => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3006';
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3008';
     const fileToUse = attachment.storedFilename || attachment.filename;
     setSelectedPDF({
       filename: attachment.filename,

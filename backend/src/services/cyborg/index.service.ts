@@ -1,4 +1,8 @@
 import { getClient } from './client';
+import { sseService } from '../sse.service';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 const EMBEDDING_DIMENSION = 768;
 
@@ -15,11 +19,33 @@ export class IndexService {
     const client = getClient();
     const indexName = this.generateIndexName(sessionId);
 
+    const session = await prisma.chatSession.findUnique({
+      where: { id: sessionId },
+      select: { userId: true }
+    });
+
     const indexes = await client.listIndexes();
     
     if (indexes.includes(indexName)) {
       console.log(`[CyborgDB] Index ${indexName} already exists`);
+      if (session) {
+        sseService.sendEngineEvent(sessionId, session.userId, {
+          type: 'notification',
+          scope: 'session',
+          sessionId,
+          message: `Index "${indexName}" already exists`,
+        });
+      }
       return;
+    }
+
+    if (session) {
+      sseService.sendEngineEvent(sessionId, session.userId, {
+        type: 'notification',
+        scope: 'session',
+        sessionId,
+        message: `Creating encrypted index "${indexName}"...`,
+      });
     }
 
     await client.createIndex({
@@ -32,11 +58,34 @@ export class IndexService {
     });
 
     console.log(`[CyborgDB] Index ${indexName} created successfully`);
+
+    if (session) {
+      sseService.sendEngineEvent(sessionId, session.userId, {
+        type: 'success',
+        scope: 'session',
+        sessionId,
+        message: `Encrypted index "${indexName}" created successfully`,
+      });
+    }
   }
 
   static async deleteIndex(sessionId: string): Promise<void> {
     const client = getClient();
     const indexName = this.generateIndexName(sessionId);
+
+    const session = await prisma.chatSession.findUnique({
+      where: { id: sessionId },
+      select: { userId: true }
+    });
+
+    if (session) {
+      sseService.sendEngineEvent(sessionId, session.userId, {
+        type: 'notification',
+        scope: 'session',
+        sessionId,
+        message: `Deleting index "${indexName}"...`,
+      });
+    }
     
     const index = await client.loadIndex({
         indexName,
@@ -45,6 +94,15 @@ export class IndexService {
 
     await index.deleteIndex()
     console.log(`[CyborgDB] Index ${indexName} deleted`);
+
+    if (session) {
+      sseService.sendEngineEvent(sessionId, session.userId, {
+        type: 'success',
+        scope: 'session',
+        sessionId,
+        message: `Index "${indexName}" deleted successfully`,
+      });
+    }
   }
 
   static async hasIndex(sessionId: string): Promise<boolean> {

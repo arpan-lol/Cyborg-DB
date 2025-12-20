@@ -73,7 +73,7 @@ export const useAttachmentStream = (attachmentId: string | null) => {
     }
 
     const connectToStream = async () => {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3006';
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3008';
       
       let token: string | null = null;
       try {
@@ -208,7 +208,7 @@ export const useBM25Progress = (sessionId: string | null, attachments: any[] | u
     const eventSources: EventSource[] = [];
 
     const connectToStream = async (attachmentId: string) => {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3006';
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3008';
       
       let token: string | null = null;
       try {
