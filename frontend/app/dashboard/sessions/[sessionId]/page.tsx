@@ -326,7 +326,11 @@ export default function ChatSessionPage() {
           reset();
         }
       }
-      setAllLogs(logs);
+      setAllLogs(prev => {
+        const persistedTimestamps = new Set(logs.map(log => log.timestamp));
+        const liveOnlyLogs = prev.filter(log => !persistedTimestamps.has(log.timestamp));
+        return [...logs, ...liveOnlyLogs];
+      });
     }
   }, [conversation?.messages, isStreaming, isComplete, optimisticMessages.length, reset]);
 

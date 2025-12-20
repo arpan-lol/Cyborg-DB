@@ -115,6 +115,35 @@ export class SessionController {
     }
   }
 
+  static async updateSession(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
+    const userId = req.user?.userId;
+    if (!userId) throw new UnauthorizedError();
+
+    const { id } = req.params;
+    const { title } = req.body;
+
+    try {
+      const session = await prisma.chatSession.findUnique({
+        where: { id, userId },
+      });
+
+      if (!session) {
+        throw new NotFoundError('Session not found');
+      }
+
+      const updatedSession = await prisma.chatSession.update({
+        where: { id },
+        data: { title },
+      });
+
+      return res.status(200).json({ session: updatedSession });
+    } catch (error) {
+      logger.error('SessionController', 'Error updating session', error instanceof Error ? error : undefined, { userId, sessionId: id });
+      if (error instanceof NotFoundError) throw error;
+      next(new ProcessingError('Failed to update session'));
+    }
+  }
+
   static async deleteSession(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
     const userId = req.user?.userId;
     if (!userId) throw new UnauthorizedError();

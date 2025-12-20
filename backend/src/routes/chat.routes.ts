@@ -31,6 +31,7 @@ router.get('/sessions', authenticateJWT, asyncHandler(ChatController.getSessions
 router.get('/sessions/:id', authenticateJWT, asyncHandler(ChatController.getSessionById));
 router.get('/sessions/:id/attachments', authenticateJWT, asyncHandler(ChatController.getSessionAttachments));
 router.get('/sessions/:id/events', authenticateToken, asyncHandler(ChatController.connectToSessionEvents));
+router.patch('/sessions/:id', authenticateJWT, asyncHandler(ChatController.updateSession));
 router.delete('/sessions/:id', authenticateJWT, asyncHandler(ChatController.deleteSession));
 
 // Messaging
@@ -41,6 +42,7 @@ router.post('/upload', authenticateJWT, upload.single('file'), asyncHandler(Chat
 router.get('/attachments/:attachmentId/status', authenticateJWT, asyncHandler(ChatController.getAttachmentStatus));
 router.get('/attachments/:attachmentId/stream', authenticateToken, asyncHandler(ChatController.streamAttachmentStatus));
 router.get('/sessions/:sessionId/attachments/:attachmentId/chunks', authenticateJWT, asyncHandler(ChatController.getAttachmentChunks));
+router.delete('/attachments/:attachmentId', authenticateJWT, asyncHandler(ChatController.deleteAttachment));
 
 // File serving
 router.get('/uploads/:filename', authenticateJWT, asyncHandler(ChatController.serveFile));
