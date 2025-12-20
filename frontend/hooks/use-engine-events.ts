@@ -29,7 +29,7 @@ export function useEngineEvents({ sessionId, onEvent, onError }: UseEngineEvents
     const connect = async () => {
       if (isCleaningUp) return;
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.cyborg.arpantaneja.dev';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3008';
       
       let token: string | null = null;
       try {

@@ -39,4 +39,4 @@ RUN --mount=type=bind,from=builder,source=/app,target=/mnt/builder \
 
 EXPOSE 3008
 
-CMD ["npm", "start"]
+CMD ["sh", "-c", "npx prisma migrate deploy --schema=src/prisma/schema.prisma && npm start"]

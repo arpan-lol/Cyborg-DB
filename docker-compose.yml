@@ -57,7 +57,7 @@ services:
     build: ./frontend
     container_name: flux-frontend
     ports:
-      - "3009:3000"
+      - "3000:3000"
     env_file:
       - ./.env
     depends_on:
