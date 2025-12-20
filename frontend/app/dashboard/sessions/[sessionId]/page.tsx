@@ -6,14 +6,12 @@ import { useConversation } from '@/hooks/use-conversations';
 import { useStreamMessage } from '@/hooks/use-stream-message';
 import { useAuth } from '@/hooks/use-auth';
 import { useQueryClient } from '@tanstack/react-query';
-import { useSessionAttachments, useDeleteAttachment, useBM25Progress, useUploadFile } from '@/hooks/use-upload';
-import { useSearchOptions } from '@/hooks/use-search-options';
+import { useSessionAttachments, useDeleteAttachment, useUploadFile } from '@/hooks/use-upload';
 import { useEngineEvents } from '@/hooks/use-engine-events';
 import ChatMessage from '@/components/ChatMessage';
 import ChatComposer from '@/components/ChatComposer';
 import AttachmentSelector from '@/components/AttachmentSelector';
 import FilePanel from '@/components/FilePanel';
-import BM25ProgressCard from '@/components/BM25ProgressCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -157,8 +155,6 @@ export default function ChatSessionPage() {
   const { data: sessionAttachments, isLoading: isLoadingAttachments } = useSessionAttachments(sessionId);
   const { sendMessage, isStreaming, isComplete, streamedContent, error, reset } = useStreamMessage();
   const deleteAttachment = useDeleteAttachment();
-  const { options: searchOptions, disableHybridSearch } = useSearchOptions();
-  const bm25Progress = useBM25Progress(sessionId, sessionAttachments);
   const uploadFile = useUploadFile();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -437,10 +433,6 @@ export default function ChatSessionPage() {
 
     await sendMessage(sessionId, content, {
       attachmentIds: selectedContextIds.length > 0 ? selectedContextIds : undefined,
-      bm25: searchOptions.hybridSearch,
-      rrf: searchOptions.rrfSearch,
-      caching: searchOptions.caching,
-      queryExpansion: searchOptions.queryExpansion,
       onComplete: () => {
         queryClient.invalidateQueries({ queryKey: ['conversations', sessionId] });
       },
@@ -453,15 +445,6 @@ export default function ChatSessionPage() {
 
 
   const handleUploadComplete = (attachmentId: string) => {
-    if (searchOptions.hybridSearch) {
-      disableHybridSearch();
-      
-      toast.info('Hybrid Search disabled', {
-        description: 'New files need BM25 indexing before using hybrid search',
-        duration: 5000,
-      });
-    }
-    
     setUploadedAttachments((prev) => [...prev, attachmentId]);
     
     // Force immediate refetch by invalidating with refetchType: 'active'
@@ -563,10 +546,6 @@ export default function ChatSessionPage() {
       return isProcessing;
     }
   );
-
-  const hasBM25Indexing = sessionAttachments?.some(
-    (att: any) => att.bm25indexStatus === 'queued' || att.bm25indexStatus === 'processing'
-  ) || false;
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -795,7 +774,7 @@ export default function ChatSessionPage() {
         <ChatComposer
           onSend={handleSendMessage}
           onAttachmentClick={() => fileInputRef.current?.click()}
-          disabled={isStreaming || isLoadingAttachments || hasProcessingAttachments || hasBM25Indexing}
+          disabled={isStreaming || isLoadingAttachments || hasProcessingAttachments}
           loading={isLoadingAttachments}
           placeholder={
             isStreaming
@@ -804,8 +783,6 @@ export default function ChatSessionPage() {
               ? 'Loading...'
               : hasProcessingAttachments
               ? 'Processing documents...'
-              : hasBM25Indexing
-              ? 'Indexing files for BM25...'
               : 'Ask Anything'
           }
         />
@@ -820,7 +797,6 @@ export default function ChatSessionPage() {
           onClose={() => setSelectedPDF(undefined)}
           onDocumentClick={handleDocumentClick}
           onDeleteAttachment={handleDeleteAttachment}
-          bm25Progress={bm25Progress}
           fileProcessingProgress={fileProcessingProgress}
           logs={allLogs}
           sessionId={sessionId}

@@ -5,10 +5,6 @@ import * as React from 'react';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
-import BM25FileSelector from './BM25FileSelector';
-import { SearchToggle } from './sidebar/SearchToggle';
-import { SearchStrategies } from './sidebar/SearchStrategies';
-import { VagueQueries } from './sidebar/VagueQueries';
 import { ConversationsList } from './sidebar/ConversationsList';
 
 import { NavUser } from '@/components/NavUser';
@@ -19,9 +15,6 @@ import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarGroupContent,
   useSidebar,
 } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth';
@@ -31,7 +24,6 @@ import {
   useDeleteConversation,
   useUpdateConversationTitle,
 } from '@/hooks/use-conversations';
-import { useSessionAttachments } from '@/hooks/use-upload';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import {
@@ -44,17 +36,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useSearchOptions } from '@/hooks/use-search-options';
-
-const KEYWORD_CACHING_HELP = `
-### Keyword Caching
-
-Stores recent query results to avoid redundant processing.
-
- • Faster responses for repeated queries  
- • Reduces LLM API calls  
- • Clears when session ends  
-`;
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { toggleSidebar, state } = useSidebar();
@@ -69,24 +50,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [editingTitle, setEditingTitle] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
-  const {
-    options,
-    updateOptions,
-    toggleHybridSearch,
-    toggleRrfSearch,
-    toggleKeywordCaching,
-  } = useSearchOptions();
-  const [showBM25Dialog, setShowBM25Dialog] = useState(false);
-  const [isCheckingBM25, setIsCheckingBM25] = useState(false);
-  const [isCheckingRRF, setIsCheckingRRF] = useState(false);
   const [user, setUser] = useState<{
     name: string;
     email: string;
     avatar: string;
   }>();
-
-  const sessionId = pathname?.match(/\/dashboard\/sessions\/([^\/]+)/)?.[1];
-  const { data: sessionAttachments } = useSessionAttachments(sessionId || '');
 
   useEffect(() => {
     if (authUser) {
@@ -145,13 +113,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     setEditingTitle('');
   };
 
-  const handleDeleteConversation = (conversationId: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setConversationToDelete(conversationId);
-    setDeleteDialogOpen(true);
-  };
-
   const confirmDeleteConversation = async () => {
     if (!conversationToDelete) return;
 
@@ -170,53 +131,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
   };
 
-  const handleHybridSearchToggle = async (checked: boolean) => {
-    if (checked) {
-      setIsCheckingBM25(true);
-      try {
-        const allCompleted = sessionAttachments?.every(
-          (att: any) => att.bm25indexStatus === 'completed'
-        );
-        const hasAnyFiles = sessionAttachments && sessionAttachments.length > 0;
-
-        if (!hasAnyFiles || !allCompleted) {
-          setShowBM25Dialog(true);
-          setIsCheckingBM25(false);
-          return;
-        }
-
-        toggleHybridSearch();
-      } finally {
-        setIsCheckingBM25(false);
-      }
-    } else {
-      toggleHybridSearch();
-    }
-  };
-
-  const handleRrfSearchToggle = async (checked: boolean) => {
-    if (checked) {
-      setIsCheckingRRF(true);
-      try {
-        const allCompleted = sessionAttachments?.every(
-          (att: any) => att.bm25indexStatus === 'completed'
-        );
-        const hasAnyFiles = sessionAttachments && sessionAttachments.length > 0;
-
-        if (!hasAnyFiles || !allCompleted) {
-          setShowBM25Dialog(true);
-          setIsCheckingRRF(false);
-          return;
-        }
-
-        toggleRrfSearch();
-      } finally {
-        setIsCheckingRRF(false);
-      }
-    } else {
-      toggleRrfSearch();
-    }
-  };
+  const sessionId = pathname?.match(/\/dashboard\/sessions\/([^\/]+)/)?.[1];
 
   return (
     <>
@@ -252,36 +167,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarHeader>
 
         <SidebarContent>
-          {sessionId && (
-            <>
-              <SearchStrategies
-                options={options}
-                onHybridSearchToggle={handleHybridSearchToggle}
-                onRrfSearchToggle={handleRrfSearchToggle}
-                onBM25ButtonClick={() => setShowBM25Dialog(true)}
-                isCheckingBM25={isCheckingBM25}
-                isCheckingRRF={isCheckingRRF}
-              />
-
-              <SidebarGroup>
-                <SidebarGroupLabel className="px-0">Caching</SidebarGroupLabel>
-                <SidebarGroupContent className="space-y-3">
-                  <div className="px-2">
-                    <SearchToggle
-                      id="keyword-caching"
-                      label="Keyword caching"
-                      helpText={KEYWORD_CACHING_HELP}
-                      checked={options.caching}
-                      onCheckedChange={toggleKeywordCaching}
-                    />
-                  </div>
-                </SidebarGroupContent>
-              </SidebarGroup>
-
-              <VagueQueries options={options} onOptionsUpdate={updateOptions} />
-            </>
-          )}
-
           <ConversationsList
             conversations={conversations || []}
             isLoading={isLoading}
@@ -292,7 +177,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             onEditSave={handleSaveTitle}
             onEditCancel={handleCancelEdit}
             onEditChange={setEditingTitle}
-            onDelete={handleDeleteConversation}
+            onDelete={(conversationId, e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setConversationToDelete(conversationId);
+              setDeleteDialogOpen(true);
+            }}
             isCreating={createConversation.isPending}
             isDeleting={deleteConversation.isPending}
           />
@@ -304,15 +194,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarFooter>
         )}
       </Sidebar>
-
-      {sessionId && sessionAttachments && (
-        <BM25FileSelector
-          sessionId={sessionId}
-          attachments={sessionAttachments}
-          open={showBM25Dialog}
-          onOpenChange={setShowBM25Dialog}
-        />
-      )}
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

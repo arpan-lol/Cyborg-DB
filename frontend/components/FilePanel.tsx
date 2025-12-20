@@ -24,7 +24,6 @@ interface Attachment {
   type: string;
   url?: string;
   size: number;
-  bm25indexStatus?: string;
   isTemporary?: boolean;
   mimeType?: string;
   metadata?: {
@@ -38,13 +37,12 @@ interface FilePanelProps {
   onClose?: () => void;
   onDocumentClick?: (attachment: Attachment) => void;
   onDeleteAttachment?: (attachmentId: string) => void;
-  bm25Progress?: Record<string, StreamStatus>;
   fileProcessingProgress?: Record<string, StreamStatus>;
   logs?: EngineEvent[];
   sessionId: string;
 }
 
-export default function FilePanel({ attachments, selectedFile, onClose, onDocumentClick, onDeleteAttachment, bm25Progress, fileProcessingProgress, logs = [], sessionId }: FilePanelProps) {
+export default function FilePanel({ attachments, selectedFile, onClose, onDocumentClick, onDeleteAttachment, fileProcessingProgress, logs = [], sessionId }: FilePanelProps) {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [chunkViewerOpen, setChunkViewerOpen] = useState(false);
   const [selectedAttachment, setSelectedAttachment] = useState<{ id: string; filename: string } | null>(null);
@@ -143,10 +141,8 @@ export default function FilePanel({ attachments, selectedFile, onClose, onDocume
                   <div className="px-4 py-2 space-y-2">
               {viewableAttachments.map((att) => {
                 const fileProgress = fileProcessingProgress?.[att.id];
-                const bm25ProgressData = bm25Progress?.[att.id];
                 const isFileProcessing = fileProgress?.status === 'processing' || fileProgress?.status === 'connected';
-                const isBM25Processing = (att.bm25indexStatus === 'processing' || att.bm25indexStatus === 'queued') && bm25ProgressData?.status === 'processing';
-                const progressValue = isFileProcessing ? fileProgress?.progress : isBM25Processing ? bm25ProgressData?.progress : undefined;
+                const progressValue = isFileProcessing ? fileProgress?.progress : undefined;
                 
                 if (att.isTemporary || progressValue !== undefined) {
                   console.log('[FilePanel] Progress:', {
@@ -154,7 +150,6 @@ export default function FilePanel({ attachments, selectedFile, onClose, onDocume
                     isTemporary: att.isTemporary,
                     fileProgress,
                     isFileProcessing,
-                    isBM25Processing,
                     progressValue,
                   });
                 }
@@ -175,16 +170,6 @@ export default function FilePanel({ attachments, selectedFile, onClose, onDocume
                           {att.isTemporary && (
                             <Badge variant="outline" className="text-xs">
                               Uploading...
-                            </Badge>
-                          )}
-                          {!att.isTemporary && att.bm25indexStatus === 'completed' && (
-                            <Badge variant="secondary" className="text-xs">
-                              BM25 Indexed
-                            </Badge>
-                          )}
-                          {!att.isTemporary && isBM25Processing && (
-                            <Badge variant="outline" className="text-xs">
-                              {bm25ProgressData?.message || 'Indexing...'}
                             </Badge>
                           )}
                         </div>

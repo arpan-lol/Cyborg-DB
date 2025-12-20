@@ -17,13 +17,6 @@ export const useStreamMessage = () => {
       options?: {
         attachmentIds?: string[]
         documentIds?: string[]
-        bm25?: boolean
-        rrf?: boolean
-        caching?: boolean
-        queryExpansion?: {
-          enabled: boolean
-          temperature: number
-        }
         onToken?: (token: string) => void
         onComplete?: (messageId: string) => void
         onError?: (error: string) => void
@@ -58,30 +51,7 @@ export const useStreamMessage = () => {
         const requestBody: any = {
           content,
           attachmentIds: options?.attachmentIds,
-          // documentIds: options?.documentIds,
         }
-
-        // const hasSearchOptions =
-        //   options?.bm25 !== undefined ||
-        //   options?.rrf !== undefined ||
-        //   options?.caching !== undefined ||
-        //   options?.queryExpansion !== undefined
-
-        // if (hasSearchOptions) {
-        //   requestBody.options = {}
-
-        //   if (options?.bm25 !== undefined)
-        //     requestBody.options.bm25 = options.bm25
-
-        //   if (options?.rrf !== undefined)
-        //     requestBody.options.rrf = options.rrf
-
-        //   if (options?.caching !== undefined)
-        //     requestBody.options.caching = options.caching
-
-        //   if (options?.queryExpansion !== undefined)
-        //     requestBody.options.queryExpansion = options.queryExpansion
-        // }
 
         console.log(
           '[STREAM] Sending message with body:',
