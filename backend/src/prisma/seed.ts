@@ -12,10 +12,10 @@ async function main() {
   console.log('Seeding database...');
 
   const guestUser = await prisma.user.upsert({
-    where: { email: 'guest@cosmicengine' },
+    where: { email: 'guest@fluxai' },
     update: {},
     create: {
-      email: 'guest@cosmicengine',
+      email: 'guest@fluxai',
       name: 'Guest User',
       password: 'guest',
     },

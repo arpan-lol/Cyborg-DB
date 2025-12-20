@@ -169,13 +169,13 @@ router.get('/me', authenticateJWT, asyncHandler(async (req: AuthRequest, res: Re
 router.post('/guest', asyncHandler(async (req: AuthRequest, res: Response) => {
   try {
     let guestUser = await prisma.user.findUnique({
-      where: { email: 'guest@cosmicengine' }
+      where: { email: 'guest@fluxai' }
     });
 
     if (!guestUser) {
       guestUser = await prisma.user.create({
         data: {
-          email: 'guest@cosmicengine',
+          email: 'guest@fluxai',
           name: 'Guest User',
           password: 'guest',
           googleId: null,
