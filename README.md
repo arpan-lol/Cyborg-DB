@@ -4,16 +4,26 @@ Flux AI is a full-stack document Q&A app built for the **CyborgDB Hackathon**. I
 
 ### Index
 
-- [Screenshots](#screenshots)
-- [CyborgDB Highlights](#cyborgdb-highlights)
-- [Tech Stack](#tech-stack)
-- [Key Features](#key-features)
-- [Architecture](#architecture)
-- [Quickstart (Docker)](#quickstart-docker)
-- [Configuration](#configuration)
-- [Migrations + Seed](#migrations--seed)
-- [Local Development (No Docker)](#local-development-no-docker)
-- [Troubleshooting](#troubleshooting)
+- [Flux AI (Cyborg-DB)](#flux-ai-cyborg-db)
+    - [Index](#index)
+  - [Screenshots](#screenshots)
+  - [CyborgDB Highlights](#cyborgdb-highlights)
+  - [Tech Stack](#tech-stack)
+  - [Key Features](#key-features)
+  - [Architecture](#architecture)
+    - [Container Topology](#container-topology)
+    - [File Ingestion Flow (Indexing)](#file-ingestion-flow-indexing)
+    - [Chat + Retrieval + Streaming](#chat--retrieval--streaming)
+    - [Data Model (Prisma)](#data-model-prisma)
+  - [Quickstart (Docker)](#quickstart-docker)
+    - [Prerequisites](#prerequisites)
+    - [1) Clone](#1-clone)
+    - [2) Configuration](#2-configuration)
+    - [3) Start](#3-start)
+  - [Migrations + Seed](#migrations--seed)
+  - [Local Development (No Docker)](#local-development-no-docker)
+  - [Encrypted Vector Search (How It Works Here)](#encrypted-vector-search-how-it-works-here)
+  - [Troubleshooting](#troubleshooting)
 
 ## Screenshots
 
