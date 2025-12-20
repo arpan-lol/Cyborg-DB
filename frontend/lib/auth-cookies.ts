@@ -17,7 +17,6 @@ const defaultOptions: CookieOptions = {
   sameSite: 'lax',
   path: '/',
   maxAge: 12 * 60 * 60,
-  domain: process.env.NODE_ENV === 'production' ? '.arpantaneja.dev' : undefined,
 };
 
 export async function setJwtCookie(token: string, options: CookieOptions = {}) {

@@ -3,14 +3,15 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('jwt')?.value;
-  const { pathname } = request.nextUrl;
+  const { pathname, searchParams } = request.nextUrl;
 
   const isAuthRoute = pathname.startsWith('/auth/login') || 
                       pathname.startsWith('/auth/callback') || 
                       pathname.startsWith('/auth/guest');
   const isProtectedRoute = pathname.startsWith('/dashboard');
+  const hasJwtParam = searchParams.has('jwt');
 
-  if (isProtectedRoute && !token) {
+  if (isProtectedRoute && !token && !hasJwtParam) {
     console.log('[middleware] No token for protected route, redirecting to login');
     const loginUrl = new URL('/auth/login', request.url);
     return NextResponse.redirect(loginUrl);

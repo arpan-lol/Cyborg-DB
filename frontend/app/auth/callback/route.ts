@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { setJwtCookie } from '@/lib/auth-cookies';
 
 export async function GET(request: NextRequest) {
   try {
     console.log('[frontend/callback] Request URL:', request.url);
     console.log('[frontend/callback] Cookies:', request.cookies.getAll());
     
-    // Cookie is already set by backend, just redirect to dashboard
+    const jwt = request.nextUrl.searchParams.get('jwt');
+    
+    if (!jwt) {
+      console.error('[frontend/callback] No JWT in query params');
+      const baseUrl = getBaseUrl(request);
+      return NextResponse.redirect(new URL('/auth/login?error=no_token', baseUrl));
+    }
+    
+    console.log('[frontend/callback] JWT found, setting cookie');
+    await setJwtCookie(jwt);
+    
     console.log('[frontend/callback] Redirecting to dashboard');
     const baseUrl = getBaseUrl(request);
     const dashboardUrl = new URL('/dashboard', baseUrl);
