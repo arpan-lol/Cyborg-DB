@@ -58,6 +58,14 @@ async function processFile(attachmentId: string, userId: number, sessionId: stri
       message: 'Converting file to markdown...',
       progress: 25,
     });
+
+    sseService.sendEngineEvent(sessionId, userId, {
+      type: 'notification',
+      scope: 'session',
+      sessionId,
+      message: `Ingesting ${attachment.filename} (converting to markdown text)...`,
+    });
+
     const markdown = await IngestionService.convertToMarkdown(attachment.url);
 
     sseService.sendEngineEvent(sessionId, userId, {

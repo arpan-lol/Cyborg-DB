@@ -135,7 +135,7 @@ export class StorageService {
         type: 'success',
         scope: 'session',
         sessionId,
-        message: `Stored ${chunkDataRecords.length} chunk metadata records in PostgreSQL`,
+        message: `Stored ${chunkDataRecords.length} chunk metadata records in DB`,
       });
     }
 

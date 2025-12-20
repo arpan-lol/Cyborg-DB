@@ -57,48 +57,56 @@ export class EmbeddingService {
       return [];
     }
 
-    const texts = chunks.map((chunk) => chunk.content);
+    const MAX_BATCH_SIZE = 100;
+    const allEmbeddings: Embedding[] = [];
 
-    try {
-      const response = await getGoogleGenAI().models.embedContent({
-        model: EMBEDDING_MODEL,
-        contents: texts,
-        config: { taskType: 'RETRIEVAL_DOCUMENT'},
-      });
+    for (let i = 0; i < chunks.length; i += MAX_BATCH_SIZE) {
+      const batchChunks = chunks.slice(i, i + MAX_BATCH_SIZE);
+      const texts = batchChunks.map((chunk) => chunk.content);
 
-      if (!response.embeddings || response.embeddings.length === 0) {
-        logger.error('Embedding', 'No embeddings returned from API', undefined, { chunkCount: chunks.length });
-        throw new ProcessingError('No embeddings returned from API');
-      }
+      try {
+        const response = await getGoogleGenAI().models.embedContent({
+          model: EMBEDDING_MODEL,
+          contents: texts,
+          config: { taskType: 'RETRIEVAL_DOCUMENT'},
+        });
 
-      const embeddings: Embedding[] = chunks.map((chunk, index) => {
-        const values = response.embeddings![index].values;
-        if (!values) {
-          logger.error('Embedding', `No embedding values for chunk ${index}`, undefined, { chunkIndex: chunk.index });
-          throw new ProcessingError(`No embedding values for chunk ${index}`);
+        if (!response.embeddings || response.embeddings.length === 0) {
+          logger.error('Embedding', 'No embeddings returned from API', undefined, { chunkCount: batchChunks.length });
+          throw new ProcessingError('No embeddings returned from API');
         }
-        return {
-          chunkIndex: chunk.index,
-          vector: values,
-          content: chunk.content,
-          metadata: chunk.metadata || {},
-        };
-      });
 
-      return embeddings;
-    } catch (error) {
-      logger.error('Embedding', 'Error generating embeddings', error instanceof Error ? error : undefined, { chunkCount: chunks.length });
-      
-      if (isGeminiError(error)) {
-        throw parseGeminiError(error);
+        const embeddings: Embedding[] = batchChunks.map((chunk, index) => {
+          const values = response.embeddings![index].values;
+          if (!values) {
+            logger.error('Embedding', `No embedding values for chunk ${index}`, undefined, { chunkIndex: chunk.index });
+            throw new ProcessingError(`No embedding values for chunk ${index}`);
+          }
+          return {
+            chunkIndex: chunk.index,
+            vector: values,
+            content: chunk.content,
+            metadata: chunk.metadata || {},
+          };
+        });
+
+        allEmbeddings.push(...embeddings);
+      } catch (error) {
+        logger.error('Embedding', 'Error generating embeddings', error instanceof Error ? error : undefined, { chunkCount: batchChunks.length, batchStart: i });
+        
+        if (isGeminiError(error)) {
+          throw parseGeminiError(error);
+        }
+        
+        if (error instanceof ProcessingError) {
+          throw error;
+        }
+        
+        throw new ProcessingError(`Failed to generate embeddings: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
-      
-      if (error instanceof ProcessingError) {
-        throw error;
-      }
-      
-      throw new ProcessingError(`Failed to generate embeddings: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+
+    return allEmbeddings;
   }
 
   static async generateQueryEmbedding(queryText: string): Promise<number[]> {

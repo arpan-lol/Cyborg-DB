@@ -2,6 +2,7 @@ import { getClient } from './client';
 import { EmbeddingService } from '../embedding.service';
 import { IndexService } from './index.service';
 import { PrismaClient } from '@prisma/client';
+import { sseService } from '../sse.service';
 
 const prisma = new PrismaClient();
 
@@ -23,6 +24,20 @@ export class SearchService {
         attachmentId?: string
     ): Promise<SearchResult[]> {
         try {
+            const session = await prisma.chatSession.findUnique({
+                where: { id: sessionId },
+                select: { userId: true }
+            });
+
+            if (session) {
+                sseService.sendEngineEvent(sessionId, session.userId, {
+                    type: 'notification',
+                    scope: 'session',
+                    sessionId,
+                    message: `Starting vector search (topK=${topK})...`,
+                });
+            }
+
             const indexName = IndexService.generateIndexName(sessionId);
             const hasIndex = await IndexService.hasIndex(sessionId);
 
@@ -30,6 +45,14 @@ export class SearchService {
 
             if (!hasIndex) {
                 console.log(`[CyborgDB] No index found for session: ${sessionId}`);
+                if (session) {
+                    sseService.sendEngineEvent(sessionId, session.userId, {
+                        type: 'error',
+                        scope: 'session',
+                        sessionId,
+                        message: 'No index found for this session',
+                    });
+                }
                 return [];
             }
 
@@ -43,6 +66,15 @@ export class SearchService {
 
             const index = await client.loadIndex({indexName, indexKey});
 
+            if (session) {
+                sseService.sendEngineEvent(sessionId, session.userId, {
+                    type: 'notification',
+                    scope: 'session',
+                    sessionId,
+                    message: 'Generating query embedding...',
+                });
+            }
+
             const queryVector = await EmbeddingService.generateQueryEmbedding(queryText);
 
             const searchK = attachmentId ? topK * 3 : topK;
@@ -51,12 +83,29 @@ export class SearchService {
                 topK: searchK,
             });
 
+            if (session) {
+                sseService.sendEngineEvent(sessionId, session.userId, {
+                    type: 'success',
+                    scope: 'session',
+                    sessionId,
+                    message: `Vector search completed, retrieving chunk data...`,
+                });
+            }
+
             const queryResults = searchResults.results as Array<{id: string, distance: number}>;
             const resultIds = queryResults.map(r => r.id);
             const scores = queryResults.map(r => r.distance);
 
             if (resultIds.length === 0) {
                 console.log(`[CyborgDB] No results found for query in session ${sessionId}`);
+                if (session) {
+                    sseService.sendEngineEvent(sessionId, session.userId, {
+                        type: 'notification',
+                        scope: 'session',
+                        sessionId,
+                        message: 'No matching vectors found',
+                    });
+                }
                 return [];
             }
 
@@ -84,7 +133,7 @@ export class SearchService {
                 .map((vectorId: string, index: number): SearchResult | null => {
                     const chunk = chunkMap.get(vectorId);
                     if (!chunk) {
-                        console.warn(`[CyborgDB] Vector ID ${vectorId} not found in PostgreSQL`);
+                        console.warn(`[CyborgDB] Vector ID ${vectorId} not found`);
                         return null;
                     }
 
@@ -111,6 +160,20 @@ export class SearchService {
                 console.log(`[CyborgDB] Found ${results.length} results in attachment ${attachmentId}`);
             } else {
                 console.log(`[CyborgDB] Found ${results.length} results for query in session ${sessionId}`);
+            }
+
+            if (session) {
+                const attachmentNames = [...new Set(results.map(r => r.filename))];
+                sseService.sendEngineEvent(sessionId, session.userId, {
+                    type: 'success',
+                    scope: 'session',
+                    sessionId,
+                    message: `Retrieved ${results.length} chunks from ${attachmentNames.length} document(s)`,
+                    data: {
+                        title: 'Search Results',
+                        body: attachmentNames.slice(0, 5).map(name => `${name}`)
+                    }
+                });
             }
 
             return results;
