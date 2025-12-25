@@ -1,77 +1,68 @@
- 'use client';
+'use client';
 
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { api } from '@/lib/api';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { OAuthButtons } from './OAuthButtons';
+import { Loader2, User } from 'lucide-react';
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<'div'>) {
-  const router = useRouter();
   const [loadingGuest, setLoadingGuest] = useState(false);
   const [guestError, setGuestError] = useState<string | null>(null);
 
-  return (
-    <div className={cn('flex flex-col gap-6', className)} {...props}>
-      <Card>
-        <CardHeader className="text-center">
-          <CardTitle className="text-xl">Welcome to Flux AI</CardTitle>
-          <CardDescription>
-            Sign in to access your AI-powered document assistant
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-6">
-            <OAuthButtons />
-          </div>
-          <CardDescription className="text-center mt-4">
-            or,{' '}
-            <button
-              type="button"
-              onClick={async (e) => {
-                e.preventDefault();
-                if (loadingGuest) return;
-                setLoadingGuest(true);
-                setGuestError(null);
-                try {
-                  console.log('[Guest] calling frontend API route /api/auth/guest');
-                  const response = await fetch('/api/auth/guest', { method: 'POST' });
-                  const data = await response.json().catch(() => null);
-                  console.log('[Guest] response', response.status, data);
-                  if (response.ok && data?.success) {
-                    window.location.href = '/dashboard/sessions';
-                    return;
-                  }
+  const handleGuestLogin = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (loadingGuest) return;
+    setLoadingGuest(true);
+    setGuestError(null);
+    try {
+      const response = await fetch('/api/auth/guest', { method: 'POST' });
+      const data = await response.json().catch(() => null);
+      if (response.ok && data?.success) {
+        window.location.href = '/dashboard/sessions';
+        return;
+      }
+      setGuestError('Guest login failed. Please try again.');
+    } catch (error) {
+      console.error('Guest login failed:', error);
+      setGuestError('Network error. Please check your connection.');
+    } finally {
+      setLoadingGuest(false);
+    }
+  };
 
-                  setGuestError('Guest login failed. Please try again.');
-                } catch (error) {
-                  console.error('Guest login failed:', error);
-                  setGuestError('Network error. Please check your connection.');
-                } finally {
-                  setLoadingGuest(false);
-                }
-              }}
-              className="underline cursor-pointer hover:text-primary transition-colors inline-flex items-center gap-1"
-            >
-              {loadingGuest ? 'Logging in…' : 'login as a guest'}
-              <span className="inline-block">→</span>
-            </button>
-            {guestError && (
-              <p className="text-sm text-red-500 mt-2">{guestError}</p>
-            )}
-          </CardDescription>
-        </CardContent>
-      </Card>
+  return (
+    <div className={cn('flex flex-col gap-4', className)} {...props}>
+      <OAuthButtons />
+      
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-border" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground">or</span>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={handleGuestLogin}
+        disabled={loadingGuest}
+        className="flex items-center justify-center gap-2 w-full h-11 rounded-lg border border-border bg-background hover:bg-muted transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {loadingGuest ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <User className="w-4 h-4" />
+        )}
+        {loadingGuest ? 'Signing in...' : 'Continue as Guest'}
+      </button>
+
+      {guestError && (
+        <p className="text-sm text-destructive text-center">{guestError}</p>
+      )}
     </div>
   );
 }

@@ -5,16 +5,21 @@ import { useAuth } from '@/hooks/use-auth';
 
 export default function SessionsPage() {
   const { data: user } = useAuth();
+  const firstName = user?.name?.split(' ')[0] || 'there';
 
   return (
-    <div className="container max-w-4xl mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Hello, {user?.name.split(' ')[0] || 'there'}</h1>
-        <p className="text-muted-foreground">
-          Click on a chat to begin interacting with the agent!
-        </p>
+    <div className="flex-1 overflow-auto">
+      <div className="max-w-3xl mx-auto px-6 py-8">
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold mb-1">
+            Hello, {firstName}
+          </h1>
+          <p className="text-muted-foreground">
+            Select a conversation or create a new one to get started.
+          </p>
+        </div>
+        <SessionList />
       </div>
-      <SessionList />
     </div>
   );
 }

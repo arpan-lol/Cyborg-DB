@@ -1,6 +1,6 @@
 {
-  "name": "flux-ai",
-  "description": "Flux AI is An AI agent that can ingest, traverse and play around with any kind of media. URLS, Pdfs, ppts, images, docs, tables, etc. Build as a custom made RAG model, It is able to fetch and traverse files for quick answers. Unlike traditional LLMs it can manipulate large files of any type, and retrieve information - or build on it recursively.",
+  "name": "cyborgdb",
+  "description": "CyborgDB - AI-powered document intelligence with military-grade encryption. Upload, search, and chat with your documents securely using encrypted vector storage.",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -38,6 +38,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
+    "framer-motion": "^12.23.26",
     "lucide-react": "^0.544.0",
     "mammoth": "^1.11.0",
     "next": "15.5.9",

@@ -3,7 +3,7 @@
 import { PanelLeftClose } from 'lucide-react';
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
+import { Database } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { ConversationsList } from './sidebar/ConversationsList';
 
@@ -149,14 +149,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuItem>
               <div className="flex items-center justify-between w-full px-1.5">
                 <a href="/dashboard" className="flex items-center gap-2">
-                  <Image
-                    src="/logo.png"
-                    alt="Flux AI"
-                    width={32}
-                    height={32}
-                    className="rounded"
-                  />
-                  <span className="text-base font-semibold">Flux AI</span>
+                  <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/20">
+                    <Database className="w-5 h-5 text-primary" />
+                  </div>
+                  <span className="text-base font-bold bg-gradient-to-r from-primary to-cyan-400 bg-clip-text text-transparent">
+                    CyborgDB
+                  </span>
                 </a>
                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={toggleSidebar}>
                   <PanelLeftClose className="h-4 w-4" />
