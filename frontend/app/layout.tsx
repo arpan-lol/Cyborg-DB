@@ -1,24 +1,26 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Outfit, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from "next-themes";
 import { cn } from '@/lib/utils'
 import { Toaster } from 'sonner'
 import Providers from '@/components/Providers'
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'], 
+const outfit = Outfit({
+  variable: '--font-outfit',
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
 })
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
+const jetbrainsMono = JetBrains_Mono({
+  variable: '--font-jetbrains',
   subsets: ['latin'],
+  weight: ['400', '500', '600'],
 })
 
 export const metadata: Metadata = {
-  title: 'Flux AI',
-  description: 'AI agent that can ingest, traverse and play around with any kind of media',
+  title: 'CyborgDB',
+  description: 'AI-powered document intelligence with encrypted vector storage',
   icons: {
     icon: '/logo.png',
     apple: '/logo.png',
@@ -35,8 +37,8 @@ export default function RootLayout({
       <body
         className={cn(
           'min-h-screen bg-background text-foreground font-sans antialiased',
-          geistSans.variable,
-          geistMono.variable
+          outfit.variable,
+          jetbrainsMono.variable
         )}
       >
       <ThemeProvider attribute="class" defaultTheme="system">

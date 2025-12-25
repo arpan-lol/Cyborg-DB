@@ -15,7 +15,7 @@ import FilePanel from '@/components/FilePanel';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, MessageSquare, Sparkles } from 'lucide-react';
 import type { Message, EngineEvent, StreamStatus } from '@/lib/types';
 import { toast } from 'sonner';
 
@@ -520,8 +520,11 @@ export default function ChatSessionPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex flex-col items-center justify-center h-screen gap-4">
+        <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+        <p className="text-muted-foreground">Loading conversation...</p>
       </div>
     );
   }
@@ -604,8 +607,14 @@ export default function ChatSessionPage() {
           <ScrollArea className="h-full bg-background">
             <div className="p-4">
             {displayMessages.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                Start a conversation by sending a message
+              <div className="flex flex-col items-center justify-center h-[60vh] text-center">
+                <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 mb-4">
+                  <MessageSquare className="h-10 w-10 text-primary/50" />
+                </div>
+                <h3 className="text-lg font-medium mb-2">Start a conversation</h3>
+                <p className="text-muted-foreground max-w-sm">
+                  Upload documents and ask questions to get AI-powered insights from your files.
+                </p>
               </div>
             ) : (
               <div className="space-y-2">
