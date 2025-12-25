@@ -53,7 +53,7 @@ export class IndexService {
       indexKey,
       indexConfig: {
         type: "ivfflat",
-        dimension: 768
+        dimension: EMBEDDING_DIMENSION
       }
     });
 

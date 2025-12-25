@@ -4,14 +4,19 @@ import os
 from pathlib import Path
 from typing import Optional
 import PyPDF2
-import google.generativeai as genai
+import requests
+import json
+import base64
+from PIL import Image
+import io
 
 load_dotenv(override=True)
 
-class GeminiClientWrapper:
+class OllamaClientWrapper:
     
-    def __init__(self, model_name: str = "gemini-2.5-flash"):
-        self.model = genai.GenerativeModel(model_name)
+    def __init__(self, model_name: str = "mistral:7b-instruct-q4_K_M", base_url: Optional[str] = None):
+        self.model_name = model_name
+        self.base_url = base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
         self.chat = self
         self.completions = self
     
@@ -30,20 +35,43 @@ class GeminiClientWrapper:
                             elif item.get("type") == "image_url":
                                 image_url = item.get("image_url", {}).get("url", "")
                                 if image_url.startswith("data:"):
-                                    import base64
-                                    from PIL import Image
-                                    import io
-                                    
                                     image_b64 = image_url.split(",", 1)[1]
                                     image_bytes = base64.b64decode(image_b64)
                                     image_data = Image.open(io.BytesIO(image_bytes))
                     elif isinstance(content, str):
                         user_message = content
             
+            prompt = user_message or "Describe this image in detail."
+            
             if image_data:
-                response = self.model.generate_content([user_message or "Describe this image in detail.", image_data])
+                image_b64 = self._image_to_base64(image_data)
+                messages_for_ollama = [
+                    {
+                        "role": "user",
+                        "content": prompt,
+                        "images": [image_b64]
+                    }
+                ]
             else:
-                response = self.model.generate_content(user_message or "Describe this image in detail.")
+                messages_for_ollama = [
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ]
+            
+            url = f"{self.base_url.rstrip('/v1').rstrip('/')}/api/chat"
+            payload = {
+                "model": self.model_name,
+                "messages": messages_for_ollama,
+                "stream": False
+            }
+            
+            response = requests.post(url, json=payload, timeout=300)
+            response.raise_for_status()
+            
+            result = response.json()
+            response_text = result.get("message", {}).get("content", "")
             
             class Choice:
                 def __init__(self, text):
@@ -53,17 +81,23 @@ class GeminiClientWrapper:
                 def __init__(self, text):
                     self.choices = [Choice(text)]
             
-            return Response(response.text)
+            return Response(response_text)
         except Exception as e:
             error_str = str(e)
             if "429" in error_str or "quota" in error_str.lower() or "rate" in error_str.lower():
-                raise Exception(f"GEMINI_RATE_LIMIT: {error_str}")
+                raise Exception(f"OLLAMA_RATE_LIMIT: {error_str}")
             elif "500" in error_str or "internal" in error_str.lower():
-                raise Exception(f"GEMINI_INTERNAL_ERROR: {error_str}")
+                raise Exception(f"OLLAMA_INTERNAL_ERROR: {error_str}")
             elif "503" in error_str or "overload" in error_str.lower():
-                raise Exception(f"GEMINI_OVERLOADED: {error_str}")
+                raise Exception(f"OLLAMA_OVERLOADED: {error_str}")
             else:
-                raise Exception(f"GEMINI_ERROR: {error_str}")
+                raise Exception(f"OLLAMA_ERROR: {error_str}")
+    
+    def _image_to_base64(self, image: Image.Image) -> str:
+        buffer = io.BytesIO()
+        image.save(buffer, format="PNG")
+        image_bytes = buffer.getvalue()
+        return base64.b64encode(image_bytes).decode("utf-8")
 
 def inject_page_markers_into_markdown(markdown_content: str, file_path: str, page_count: Optional[int] = None) -> str:
     """

@@ -8,7 +8,7 @@ let client: Client | null = null;
 export function getClient() {
     if (!client){
         client = new Client({
-            baseUrl: CYBORG_BASE_URL ? CYBORG_BASE_URL : 'http://localhost:8000',
+            baseUrl: CYBORG_BASE_URL ? CYBORG_BASE_URL : 'http://localhost:8000', //fallback for development
             apiKey: CYBORG_API_KEY
         })
     }

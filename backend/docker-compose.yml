@@ -1,4 +1,4 @@
-version: '3.8'
+# this compose is only for local development 
 services:
   cyborgdb:
     image: cyborginc/cyborgdb-service:latest
@@ -10,5 +10,23 @@ services:
       - cyborgdb-data:/home/cyborguser/.cyborgdb
       - ./logs:/app/logs
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: flux-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    entrypoint: /bin/sh
+    command: -c "ollama serve & sleep 5 && ollama pull mistral:7b-instruct-q4_K_M && ollama pull nomic-embed-text && wait"
+
+
 volumes:
   cyborgdb-data:
+  ollama_models:

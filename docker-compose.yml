@@ -31,11 +31,30 @@ services:
     env_file:
       - ./.env
     depends_on:
-      - cyborgdb
+      cyborgdb:
+        condition: service_started
+      ollama:
+        condition: service_healthy
     networks:
       - internal
     volumes:
       - uploads:/app/uploads
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: flux-ollama
+    volumes:
+      - ollama_models:/root/.ollama
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    entrypoint: /bin/sh
+    command: -c "ollama serve & sleep 5 && ollama pull mistral:7b-instruct-q4_K_M && ollama pull nomic-embed-text && wait"
 
   backend:
     build: ./backend
@@ -45,8 +64,12 @@ services:
     env_file:
       - ./.env
     depends_on:
-      - postgres
-      - md-service
+      postgres:
+        condition: service_healthy
+      md-service:
+        condition: service_started
+      ollama:
+        condition: service_healthy
     networks:
       - internal
       - external
@@ -75,3 +98,4 @@ volumes:
   cyborgdb-data:
   postgres_data:
   uploads:
+  ollama_models:

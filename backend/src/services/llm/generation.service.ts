@@ -1,14 +1,17 @@
-import { GoogleGenAI, Content } from '@google/genai';
+import OpenAI from 'openai';
 import { RetrievalService } from './retrieval.service';
 import { buildPrompt } from './prompts/system.prompt';
 import { logger } from '../../utils/logger.util.js';
-import { isGeminiError, parseGeminiError, ProcessingError } from '../../types/error.types';
+import { ProcessingError } from '../../types/error.types';
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GOOGLE_GENAI_API_KEY,
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434/v1'//fallback is for development
+const openai = new OpenAI({
+  baseURL: OLLAMA_BASE_URL,
+  apiKey: 'ollama',
 });
 
-const MODEL = 'gemini-2.5-flash';
+const MODEL = process.env.OLLAMA_MODEL || 'mistral:7b-instruct-q4_K_M';
+const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -17,15 +20,38 @@ interface ChatMessage {
 
 function formatHistory(
   conversationHistory: ChatMessage[]
-): Content[] {
-  return conversationHistory.map((msg) => ({
-    role: msg.role === 'assistant' ? ('model' as const) : ('user' as const),
-    parts: [{ text: msg.content }],
-  }));
+): OpenAI.Chat.ChatCompletionMessageParam[] {
+  return conversationHistory
+    .filter(msg => msg.role !== 'system')
+    .map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
 }
 
 
 export class GenerationService {
+  static async warmup(): Promise<void> {
+    try {
+      logger.info('Generation', 'Warming up LLM!!');
+      
+      await fetch(`${OLLAMA_URL}/api/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: MODEL,
+          prompt: "",
+          stream: false,
+          keep_alive: -1,
+        }),
+      });
+
+      logger.info('Generation', 'LLM model warmed up and loaded into memory');
+    } catch (error) {
+      logger.error('Generation', 'Failed to warm up LLM model', error instanceof Error ? error : undefined);
+    }
+  }
+
   static async *streamResponse(
     sessionId: string,
     query: string,
@@ -38,47 +64,37 @@ export class GenerationService {
 
       logger.info('Generation', 'Starting stream response', { sessionId });
 
-      const contents: Content[] = [
+      const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
         {
-          role: 'user' as const,
-          parts: [{ text: systemPromptWithContext }],
+          role: 'system',
+          content: systemPromptWithContext,
         },
         ...formatHistory(conversationHistory),
         {
-          role: 'user' as const,
-          parts: [{ text: query }],
+          role: 'user',
+          content: query,
         },
       ];
 
-      const stream = await ai.models.generateContentStream({
-        model: MODEL,
-        contents,
-        config: {
+      const stream = await openai.chat.completions.create(
+        {
+          model: MODEL,
+          messages,
           temperature: 0.7,
-          maxOutputTokens: 2048,
+          max_tokens: 2048,
+          stream: true,
         },
-      });
+        { body: { keep_alive: -1 } as any }
+      );
 
       for await (const chunk of stream) {
-        const candidates = chunk.candidates ?? [];
-
-        for (const candidate of candidates) {
-          const parts = candidate.content?.parts ?? [];
-
-          for (const part of parts) {
-            if (part.text) {
-              yield part.text;
-            }
-          }
+        const content = chunk.choices[0]?.delta?.content;
+        if (content) {
+          yield content;
         }
       }
     } catch (error) {
       logger.error('Generation', 'Error streaming response', error instanceof Error ? error : undefined, { sessionId });
-
-      if (isGeminiError(error)) {
-        throw parseGeminiError(error);
-      }
-
       throw new ProcessingError('Failed to stream response');
     }
   }
@@ -97,43 +113,40 @@ export class GenerationService {
     } = params
 
     try {
-      const contents: Content[] = []
+      const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [];
 
       if (systemPrompt) {
-        contents.push({
-          role: 'user' as const,
-          parts: [{ text: systemPrompt }],
-        })
+        messages.push({
+          role: 'system',
+          content: systemPrompt,
+        });
       }
 
-      contents.push({
-        role: 'user' as const,
-        parts: [{ text: userPrompt }],
-      })
+      messages.push({
+        role: 'user',
+        content: userPrompt,
+      });
 
-      const result = await ai.models.generateContent({
-        model: MODEL,
-        contents,
-        config: {
+      const result = await openai.chat.completions.create(
+        {
+          model: MODEL,
+          messages,
           temperature,
-          maxOutputTokens: maxTokens,
+          max_tokens: maxTokens,
         },
-      })
+        { body: { keep_alive: -1 } as any }
+      );
 
-      const text =
-        result.candidates?.[0]?.content?.parts
-          ?.map(p => p.text)
-          .filter(Boolean)
-          .join('') ?? ''
+      const text = result.choices[0]?.message?.content || '';
 
-      return text.trim()
+      return text.trim();
     } catch (error) {
       logger.error(
         'Generation',
         'generate() failed',
         error instanceof Error ? error : undefined
-      )
-      throw error
+      );
+      throw error;
     }
   }
 }
