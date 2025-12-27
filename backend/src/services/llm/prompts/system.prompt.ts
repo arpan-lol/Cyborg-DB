@@ -107,7 +107,5 @@ export function buildPrompt(
       .join('\n')}`;
   }
 
-  fullPrompt += `\n\n**USER QUERY:**\n${userQuery}`;
-
   return fullPrompt;
 }

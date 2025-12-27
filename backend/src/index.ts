@@ -6,7 +6,6 @@ import { globalErrorHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/auth.routes.js';
 import chatRoutes from './routes/chat.routes.js';
 import { Orchestrator } from './utils/orchestrator.util.js';
-import { GenerationService } from './services/llm/generation.service.js';
 
 const app = express();
 const PORT = '3008';
@@ -26,8 +25,6 @@ app.use('/chat', chatRoutes);
 app.use(globalErrorHandler);
 
 Orchestrator();
-
-GenerationService.warmup();
 
 app.listen(PORT, () => {
   console.log(`[server] Listening on http://localhost:${PORT}`);

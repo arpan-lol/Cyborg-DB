@@ -4,8 +4,9 @@ from typing import Optional
 import time
 import os
 from pathlib import Path
-from utils import OllamaClientWrapper, inject_page_markers_into_markdown, get_pdf_page_count
+from utils import GeminiClientWrapper, inject_page_markers_into_markdown, get_pdf_page_count
 from markitdown import MarkItDown
+import google.generativeai as genai
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
@@ -16,10 +17,14 @@ app = FastAPI(
     version="1.0.0",
 )
 
-ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
-ollama_model = os.getenv("OLLAMA_MODEL", "mistral:7b-instruct-q4_K_M")
-ollama_client = OllamaClientWrapper(model_name=ollama_model, base_url=ollama_base_url)
-md = MarkItDown(llm_client=ollama_client, llm_model=ollama_model)
+gemini_api_key = os.getenv("GOOGLE_GENAI_API_KEY")
+if gemini_api_key:
+    genai.configure(api_key=gemini_api_key)
+    gemini_client = GeminiClientWrapper()
+    md = MarkItDown(llm_client=gemini_client, llm_model="gemini-2.5-flash")
+else:
+    md = MarkItDown()
+    print("⚠️ MarkItDown initialized without LLM (no GOOGLE_GENAI_API_KEY found)")
 
 
 class FilePathRequest(BaseModel):
@@ -138,12 +143,12 @@ async def process_file_endpoint(request: FilePathRequest):
         error_str = str(e)
         print(f"❌ Error processing file: {error_str}")
         
-        if "OLLAMA_RATE_LIMIT" in error_str:
-            error_message = "Ollama API RateLimit Hit"
-        elif "OLLAMA_INTERNAL_ERROR" in error_str:
-            error_message = "Ollama API Internal Server Error"
-        elif "OLLAMA_OVERLOADED" in error_str:
-            error_message = "Ollama API Internal Server Overloaded"
+        if "GEMINI_RATE_LIMIT" in error_str:
+            error_message = "Google Gemini API RateLimit Hit"
+        elif "GEMINI_INTERNAL_ERROR" in error_str:
+            error_message = "Google Gemini API Internal Server Error"
+        elif "GEMINI_OVERLOADED" in error_str:
+            error_message = "Google Gemini API Internal Server Overloaded"
         else:
             error_message = "Processing failed! The server might be overloaded, please try again later."
         

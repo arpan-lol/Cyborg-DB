@@ -54,7 +54,7 @@ services:
       retries: 5
       start_period: 30s
     entrypoint: /bin/sh
-    command: -c "ollama serve & sleep 5 && ollama pull mistral:7b-instruct-q4_K_M && ollama pull nomic-embed-text && wait"
+    command: -c "ollama serve & sleep 5 && ollama pull nomic-embed-text && wait"
 
   backend:
     build: ./backend
@@ -64,12 +64,8 @@ services:
     env_file:
       - ./.env
     depends_on:
-      postgres:
-        condition: service_healthy
-      md-service:
-        condition: service_started
-      ollama:
-        condition: service_healthy
+      - postgres
+      - md-service
     networks:
       - internal
       - external
@@ -98,4 +94,3 @@ volumes:
   cyborgdb-data:
   postgres_data:
   uploads:
-  ollama_models:

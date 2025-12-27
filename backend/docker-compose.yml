@@ -24,7 +24,7 @@ services:
       retries: 5
       start_period: 30s
     entrypoint: /bin/sh
-    command: -c "ollama serve & sleep 5 && ollama pull mistral:7b-instruct-q4_K_M && ollama pull nomic-embed-text && wait"
+    command: -c "ollama serve & sleep 5 && ollama pull nomic-embed-text && wait"
 
 
 volumes:
