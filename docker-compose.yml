@@ -93,4 +93,5 @@ networks:
 volumes:
   cyborgdb-data:
   postgres_data:
+  ollama_models:
   uploads:
