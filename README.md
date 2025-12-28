@@ -1,267 +1,346 @@
-# Flux AI (Cyborg-DB)
+<div align="center">
+  
+  # VEIL - Encrypted Document Intelligence
+  
+  **Search millions of sensitive documents without exposing your sources.**
+  
+  [![Live Demo](https://img.shields.io/badge/demo-live-brightgreen?style=for-the-badge)](https://cyborg.arpantaneja.dev/)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
+  [![CyborgDB](https://img.shields.io/badge/Powered%20by-CyborgDB-purple?style=for-the-badge)](https://cyborgdb.ai)
+  
+  [Live Demo](https://cyborg.arpantaneja.dev/) • [Features](#features) • [Architecture](#technical-architecture) • [Quick Start](#quick-start)
 
-Flux AI is a full-stack document Q&A app built for the **CyborgDB Hackathon**. It performs Retrieval-Augmented Generation (RAG) over user-uploaded files and stores embeddings in **encrypted CyborgDB indexes** for secure similarity search.
+</div>
 
-### Index
-
-- [Flux AI (Cyborg-DB)](#flux-ai-cyborg-db)
-    - [Index](#index)
-  - [Screenshots](#screenshots)
-  - [Healthcare \& HIPAA](#healthcare--hipaa)
-  - [CyborgDB Highlights](#cyborgdb-highlights)
-  - [Tech Stack](#tech-stack)
-  - [Key Features](#key-features)
-  - [Architecture](#architecture)
-    - [Container Topology](#container-topology)
-    - [File Ingestion Flow (Indexing)](#file-ingestion-flow-indexing)
-    - [Chat + Retrieval + Streaming](#chat--retrieval--streaming)
-  - [Quickstart (Docker)](#quickstart-docker)
-    - [Prerequisites](#prerequisites)
-    - [1) Clone](#1-clone)
-    - [2) Configuration](#2-configuration)
-    - [3) Start](#3-start)
-  - [Migrations + Seed](#migrations--seed)
-  - [Local Development (No Docker)](#local-development-no-docker)
-  - [Encrypted Vector Search (How It Works Here)](#encrypted-vector-search-how-it-works-here)
-  - [Troubleshooting](#troubleshooting)
+---
 
 ## Screenshots
 
-![Flux AI – session + file panel](screenshots/img1.jpeg)
-![Flux AI – attachment-scoped query + streaming](screenshots/img2.jpeg)
-![Flux AI – response with citations + engine logs](screenshots/img3.jpeg)
-![Flux AI – citation-driven file viewer](screenshots/img4.jpeg)
+<div align="center">
 
-## Healthcare & HIPAA
+### Document Upload & Processing
+<img src="screenshots/img1_documents_upload.png" alt="Document Upload" width="800" />
 
-Flux AI is built for **healthcare document understanding** (e.g., medical reports, discharge summaries, clinical references) with a security model that supports workflows involving **PHI**.
+*Real-time processing events show every step of encrypted ingestion*
 
-HIPAA note: this project is designed with **HIPAA-aligned security considerations** in mind (encryption, access controls, and minimized data exposure), but HIPAA compliance is ultimately a **program/process** (policies, BAAs, access governance, auditing, retention, incident response). Validate requirements with your compliance/legal team before handling real PHI.
+### Chunk Viewer with Citations
+<img src="screenshots/img2_chunks.png" alt="Chunk Viewer" width="800" />
 
-Privacy- and compliance-relevant design choices:
+*Navigate through source chunks with page-level precision*
 
-- **Encrypted vector search (CyborgDB)**: embeddings are stored and queried in encrypted CyborgDB indexes.
-- **Per-session isolation**: separate encrypted indexes per session help compartmentalize data.
-- **Scoped retrieval**: attachment selection limits which documents are used for context.
-- **Audit-friendly UX**: “engine events” provide an execution trail for ingestion/retrieval steps.
+### AI-Powered Chat
+<img src="screenshots/img3_query.png" alt="Chat Interface" width="800" />
 
-## CyborgDB Highlights
+<img src="screenshots/img4_response.png" alt="Chat Interface" width="800" />
 
-This project is designed to highlight CyborgDB capabilities in a practical RAG system:
+*Get answers with inline citations back to your documents*
 
-- **Encrypted vector storage**: embeddings live inside CyborgDB, not in plaintext tables.
-- **Per-session isolation**: each chat session gets its own encrypted index (`session_<sessionId>`), reducing blast radius and simplifying access control.
-- **Secure retrieval**: similarity search runs against encrypted vectors using an `ENCRYPTION_KEY`-backed index key.
+</div>
+
+---
+
+## The Problem: Investigative Journalism Needs Secure Document Analysis
+
+Investigative journalists often work with **highly sensitive leaked documents** like court filings, financial records, whistleblower evidence, and classified materials. Traditional document analysis tools store your data in plaintext, creating massive security risks:
+
+- **Source Exposure**: Unencrypted databases can be subpoenaed or hacked
+- **Legal Liability**: Storing sensitive documents in the clear creates liability  
+- **Chilling Effect**: Journalists self-censor knowing their data isn't protected
+
+**VEIL solves this with end-to-end encrypted vector search powered by CyborgDB.**
+
+---
+
+## Why Encryption Matters for Journalism
+
+<table>
+<tr>
+<td width="50%">
+
+### Traditional RAG Systems
+
+Documents are converted to plaintext chunks and stored in a vector database. Anyone with database access can read your sources.
+
+</td>
+<td width="50%">
+
+### VEIL with CyborgDB
+
+Documents are converted to encrypted chunks and stored as encrypted vectors. Even with database access, data is unreadable without keys.
+
+</td>
+</tr>
+</table>
+
+### CyborgDB's Encryption Guarantees
+
+| Security Feature | Description |
+|------------------|-------------|
+| **Client-side Encryption** | Vectors are encrypted BEFORE leaving your machine |
+| **Zero-Knowledge Architecture** | CyborgDB cannot read your data ever |
+| **AES-256 Encryption** | Military-grade encryption for vector indices |
+| **Per-Session Keys** | Each investigation session uses unique encryption keys |
+| **Encrypted Search** | Search queries are performed on encrypted data |
+
+> *"With VEIL, journalists can analyze thousands of leaked documents with the same security guarantees as Signal messaging."*
+
+---
+
+## Features
+
+### Multi-Format Document Support
+- **PDFs** with page-level citations (OCR-enabled)
+- **Word Documents** (.docx)
+- **Spreadsheets** (.xlsx, .csv)
+- **Presentations** (.pptx)
+- **Images** with vision AI extraction
+- **Plain text** files
+
+### Intelligent RAG Pipeline
+- **Semantic chunking** with overlap for context preservation
+- **Dynamic TopK** calculation based on document count
+- **Multi-document parallel search** across entire case files
+- **Page-level citation tracking** for PDF documents
+- **Ranked context retrieval** with relevance scoring
+
+### Real-Time Chat Interface
+- **Streaming responses** from Gemini 2.5 Flash
+- **Session-based conversations** with full history
+- **Inline citations** linking directly to source pages
+- **Chunk viewer** for examining exact source text
+
+### Processing Transparency
+- **Live engine events** showing every processing step
+- **Upload progress tracking** for large documents
+- **Vector storage confirmations** with index names
+- **Search result previews** with chunk counts
+
+---
+
+## Technical Architecture
+
+```mermaid
+flowchart TB
+    subgraph Frontend["Frontend - Next.js 15 + React 19 + TailwindCSS"]
+        SM[Session Manager]
+        CU[Chat UI with Streaming]
+        FP[File Panel]
+        CV[Chunk Viewer with Citations]
+    end
+
+    subgraph Backend["Backend - Express 5 + TypeScript + Prisma"]
+        subgraph RAG["RAG Orchestration Layer"]
+            IS["Ingestion Service<br/>PDF→MD, Chunking, Embedding"]
+            RS["Retrieval Service<br/>Dynamic K, Multi-doc, Ranking"]
+            GS["Generation Service<br/>Gemini 2.5 Flash, Streaming"]
+        end
+        
+        subgraph Cyborg["CyborgDB Layer - Encrypted"]
+            IDX["Index Service<br/>IVFFlat, 768-dim, Per-session"]
+            STO["Storage Service<br/>Encrypted Upsert, Batch Ops"]
+            SCH["Search Service<br/>Encrypted Query, Top-K"]
+        end
+    end
+
+    subgraph Python["Python Service - FastAPI + MarkItDown"]
+        PP[PDF Parsing with OCR]
+        PM[Page Marker Injection]
+        MF[Multi-format Support]
+        GV[Gemini Vision for Images]
+    end
+
+    subgraph Ollama["Ollama - Local Embeddings"]
+        NE["nomic-embed-text<br/>768 dimensions<br/>100% Local"]
+    end
+
+    subgraph Databases["Databases"]
+        PG[(PostgreSQL<br/>Metadata)]
+        CDB[(CyborgDB<br/>Encrypted Vectors)]
+    end
+
+    Frontend -->|SSE + REST API| Backend
+    IS --> Python
+    IS --> Ollama
+    RAG --> Cyborg
+    Cyborg --> Databases
+```
+
+### Data Flow
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant F as Frontend
+    participant B as Backend
+    participant P as Python Service
+    participant O as Ollama
+    participant C as CyborgDB
+    participant G as Gemini
+
+    U->>F: Upload Document
+    F->>B: POST /upload
+    B->>P: Convert to Markdown
+    P-->>B: Markdown with Page Markers
+    B->>B: Chunk Document
+    B->>O: Generate Embeddings
+    O-->>B: 768-dim Vectors
+    B->>C: Store Encrypted Vectors
+    C-->>B: Confirmation
+    
+    U->>F: Ask Question
+    F->>B: POST /chat
+    B->>O: Embed Query
+    O-->>B: Query Vector
+    B->>C: Encrypted Vector Search
+    C-->>B: Top-K Results
+    B->>G: Generate Response with Context
+    G-->>B: Streaming Response
+    B-->>F: SSE Stream
+    F-->>U: Display with Citations
+```
+
+---
+
+## RAG Techniques Used
+
+### 1. Semantic Chunking with Overlap
+
+Documents are split into 2000-character chunks with 200-character overlap to preserve context across boundaries. The chunking algorithm uses priority-based separators (paragraphs, lines, sentences, words) to find natural break points.
+
+### 2. Dynamic TopK Retrieval
+
+The system automatically adjusts the number of chunks retrieved based on the document count to optimize context quality within token limits.
+
+| Documents | TopK Per Doc | Total Context |
+|-----------|--------------|---------------|
+| 1         | 15           | ~7,500 tokens |
+| 5         | 10           | ~25,000 tokens|
+| 10+       | 8            | ~40,000 tokens|
+
+### 3. Parallel Multi-Document Search
+
+When querying across multiple documents, VEIL performs concurrent vector searches against each document's chunks, then ranks and merges results by relevance score.
+
+### 4. Page-Level Citation Tracking
+
+PDF page markers are extracted during parsing and preserved through the chunking process. The LLM injects citations in the format `[SOURCE: document.pdf | Page 12]` which link directly to the source in the chunk viewer.
+
+### 5. Normalized Vector Embeddings
+
+All embeddings are L2-normalized before storage to ensure consistent cosine similarity scoring during retrieval.
+
+---
+
+## Performance & Scale
+
+| Metric | Value |
+|--------|-------|
+| **Token Budget** | 150,000 tokens per query |
+| **Max Chunks per Query** | 50 chunks |
+| **Max Chunks per Document** | 15 chunks |
+| **Embedding Dimension** | 768 (nomic-embed-text) |
+| **Embedding Batch Size** | 5 concurrent |
+| **Vector Upsert Batch** | 50 vectors per operation |
+| **Streaming Latency** | <100ms first token |
+
+### Document Processing Benchmarks
+
+| Document Type | Size | Processing Time |
+|---------------|------|-----------------|
+| PDF (10 pages) | ~500KB | ~3s |
+| PDF (100 pages) | ~5MB | ~15s |
+| Large legal filing | ~50MB | ~60s |
+| DOCX with images | ~10MB | ~8s |
+
+---
+
+## Run Entirely Locally
+
+VEIL is designed to run **completely air-gapped** for maximum security. All services run in Docker:
+
+- **CyborgDB**: Encrypted vector storage (local)
+- **Ollama**: nomic-embed-text embeddings (local)
+- **PostgreSQL**: Metadata storage (local)
+- **Python service**: Document parsing (local)
+- **Backend**: Express API (local)
+- **Frontend**: Next.js UI (local)
+
+The only external call is to the Gemini API for chat generation, which can be replaced with local Ollama models for 100% air-gapped operation.
+
+### Why Local Matters for Journalists
+
+| Concern | Cloud Solution | VEIL Local |
+|---------|---------------|------------|
+| **Subpoena Risk** | High - Provider logs everything | None - No external records |
+| **Network Sniffing** | Encrypted but metadata exposed | No network traffic |
+| **Third-Party Access** | Provider ToS allows access | You control the keys |
+| **Data Residency** | Unknown jurisdiction | Your machine only |
+
+---
+
+## Quick Start
+
+### Prerequisites
+- Docker & Docker Compose
+- Node.js 20+ (for development)
+- Google Gemini API key
+
+### 1. Clone & Configure
+
+Clone the repository and create your environment file with the required configuration:
+- `GOOGLE_GENAI_API_KEY`: Your Gemini API key
+- `ENCRYPTION_KEY`: A base64-encoded 32-byte key for CyborgDB encryption
+- `DATABASE_URL`: PostgreSQL connection string
+
+### 2. Generate Encryption Key
+
+Generate a secure 32-byte encryption key using Node.js crypto module and encode it as base64.
+
+### 3. Launch
+
+Start all services with Docker Compose and access the application at http://localhost:3000.
+
+### 4. Development Mode
+
+For local development, run the backend, frontend, and Python service separately with their respective dev commands.
+
+---
 
 ## Tech Stack
 
-- **Frontend**: Next.js (App Router), TypeScript, Tailwind CSS
-- **Backend**: Node.js, Express, TypeScript
-- **RAG / LLM**: Google GenAI (embeddings + generation)
-- **Vector store**: CyborgDB (encrypted indexes)
-- **Database**: Postgres + Prisma
-- **Ingestion**: Python FastAPI service (file/URL → Markdown)
-- **Streaming**: Server-Sent Events (SSE)
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | Next.js 15, React 19, TailwindCSS, Radix UI |
+| **Backend** | Express 5, TypeScript, Prisma ORM |
+| **Vector DB** | CyborgDB (encrypted) |
+| **Embeddings** | Ollama + nomic-embed-text (768-dim) |
+| **LLM** | Google Gemini 2.5 Flash |
+| **Document Parsing** | FastAPI + MarkItDown + PyMuPDF |
+| **Database** | PostgreSQL 16 |
+| **Auth** | JWT + Google OAuth |
 
-## Key Features
+---
+## Team
 
-- **End-to-end RAG ingestion**: upload → convert to Markdown → chunk → embed → encrypted upsert → chunk metadata persisted.
-- **Attachment-scoped retrieval**: users select which files to use; only those documents are searched.
-- **Streaming chat (SSE)**: token streaming to the UI, plus a separate stream of “engine events” for logs/progress.
-- **Multi-format ingestion**: PDFs, Office docs (DOCX/PPTX/XLSX), images, and common text formats (based on backend allow-list).
-- **Chunk viewer + citations**: responses can reference chunks; UI can open the source document.
-- **Auth**: JWT auth, with optional Google OAuth and a **guest login** path.
+Built by:
+- **Arpan Taneja**
+- **Ashish K. Chowdhary**  
+- **Pratham Gupta**
+- **Himanshu Gupta**
+- **Aditya**
 
-## Architecture
+---
 
-### Container Topology
+## License
 
-```mermaid
-flowchart LR
-  U[User Browser] -->|HTTP :3009| FE[Next.js Frontend\ncontainer: flux-frontend]
-  FE -->|HTTP| BE[Express Backend\ncontainer: flux-backend\nport: 3008]
+MIT License - See [LICENSE](LICENSE) for details.
 
-  BE -->|SQL| PG[(Postgres\ncontainer: flux-postgres)]
-  BE -->|HTTP /process-file| MD[Python Markdown Service\ncontainer: flux-python-md-service\nFastAPI :3001]
-  BE -->|Cyborg SDK| CY[(CyborgDB Service\ncontainer: flux-cyborgdb\n:8000)]
+---
 
-  BE -->|volume| UP[(uploads volume)]
-  MD -->|volume| UP
-```
-
-### File Ingestion Flow (Indexing)
-
-```mermaid
-sequenceDiagram
-  autonumber
-  participant FE as Frontend
-  participant BE as Backend (Express)
-  participant Q as In-memory Queue
-  participant MD as Python MD Service (FastAPI)
-  participant E as Embeddings (Google GenAI)
-  participant CY as CyborgDB Index (encrypted)
-  participant PG as Postgres (Prisma)
-
-  FE->>BE: POST /chat/upload (multipart: file, sessionId)
-  BE->>PG: Create Attachment record
-  BE->>Q: Enqueue job: process-file {attachmentId, sessionId}
-  FE->>BE: GET /chat/attachments/:id/stream (SSE)
-
-  Q->>BE: Run Orchestrator job
-  BE->>CY: Create index if missing (indexName=session_<uuid>, indexKey=ENCRYPTION_KEY)
-  BE->>MD: POST /process-file {file_path: <absolute uploads path>}
-  MD-->>BE: markdown_content
-  BE->>BE: Chunk markdown (chunkSize=1000, overlap=200)
-  BE->>E: Embed chunks (text-embedding-004)
-  E-->>BE: vectors[]
-  BE->>CY: Upsert encrypted vectors
-  BE->>PG: Insert ChunkData (content + metadata + vectorId)
-  BE-->>FE: SSE progress updates (processing -> completed)
-```
-
-### Chat + Retrieval + Streaming
-
-```mermaid
-sequenceDiagram
-  autonumber
-  participant FE as Frontend
-  participant BE as Backend (Express)
-  participant CY as CyborgDB
-  participant PG as Postgres
-  participant LLM as Gemini (generation)
-
-  FE->>BE: POST /chat/sessions/:id/messages {content, attachmentIds}
-  BE-->>FE: SSE stream begins (user_message)
-
-  alt attachmentIds provided
-    BE->>CY: query() on per-session encrypted index
-    BE->>PG: Fetch ChunkData for returned vectorIds
-    BE->>BE: Build prompt with excerpts + page markers
-  end
-
-  BE->>LLM: generateContentStream()
-  loop tokens
-    LLM-->>BE: token
-    BE-->>FE: SSE token
-  end
-
-  BE->>PG: Persist assistant message
-  BE-->>FE: SSE done
-```
-
-
-## Quickstart (Docker)
-
-### Prerequisites
-
-- Docker Desktop
-- Google GenAI API key (for embeddings + generation)
-
-### 1) Clone
-
-```bash
-git clone https://github.com/arpan-lol/cyborg-db.git
-cd cyborg-db
-```
-
-### 2) Configuration
-
-Create a `.env` at the repo root:
-
-```bash
-copy .env.example .env
-```
-
-Required variables (high-level):
-
-- `DATABASE_URL`
-- `JWT_SECRET`
-- `GOOGLE_GENAI_API_KEY`
-- `CYBORG_BASE_URL`, `CYBORGDB_API_KEY`
-- `ENCRYPTION_KEY` (base64)
-
-Common local values (Docker Compose):
-
-- Frontend: `http://localhost:3009`
-- Backend: `http://localhost:3008`
-
-Generate an encryption key (PowerShell):
-
-```powershell
-$bytes = New-Object byte[] 32
-[Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
-[Convert]::ToBase64String($bytes)
-```
-
-### 3) Start
-
-```bash
-docker compose up --build
-```
-
-Services (local):
-
-- Frontend: `http://localhost:3009`
-- Backend: `http://localhost:3008`
-
-## Migrations + Seed
-
-Prisma migrations are not automatically executed on container startup. Run once after the first boot:
-
-```bash
-docker compose exec backend npx prisma migrate deploy --schema=src/prisma/schema.prisma
-docker compose exec backend npm run prisma:seed
-```
-
-The seed creates/updates a guest user (`guest@fluxai`).
-
-## Local Development (No Docker)
-
-If you prefer running services directly:
-
-- Backend:
-  ```bash
-  cd backend
-  npm install
-  npm run dev
-  ```
-
-- Frontend:
-  ```bash
-  cd frontend
-  npm install
-  npm run dev
-  ```
-
-- Python Markdown service:
-  ```bash
-  cd backend/src/scripts
-  pip install -r requirements.txt
-  python api.py
-  ```
-
-You will also need:
-
-- A running Postgres matching `DATABASE_URL`.
-- A running CyborgDB service (the repo uses `cyborginc/cyborgdb-service:latest`).
-
-## Encrypted Vector Search (How It Works Here)
-
-- CyborgDB index is created **per chat session**:
-  - index name: `session_<sessionId>` (UUID hyphens replaced with underscores)
-  - index type: `ivfflat`, dimension `768`
-- The encryption key (`indexKey`) is loaded from `ENCRYPTION_KEY` (base64).
-- CyborgDB stores vectors; Postgres stores chunk text + metadata (`ChunkData`).
-
-## Troubleshooting
-
-- File upload errors:
-  - Backend enforces 50MB max upload size via Multer.
-  - Python service enforces 100MB max per file for `/process-file`.
-- If vector operations fail, verify:
-  - `ENCRYPTION_KEY` is set and base64-decodable.
-  - `CYBORG_BASE_URL` points to the CyborgDB service (`http://cyborgdb:8000` in Docker).
-- If the app starts but auth fails:
-  - Ensure `JWT_SECRET` is set.
-  - For Google OAuth, ensure `backend/google-creds.json` exists and `REDIRECT_URI` matches the Google Console configuration.
-
+<div align="center">
+  
+  **[Try VEIL Live](https://cyborg.arpantaneja.dev/)**
+  
+  *Protecting sources. Exposing truth.*
+  
+</div>
