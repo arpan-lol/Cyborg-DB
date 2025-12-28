@@ -22,12 +22,8 @@
 ### Document Upload & Processing
 <img src="screenshots/img1_documents_upload.png" alt="Document Upload" width="800" />
 
-*Real-time processing events show every step of encrypted ingestion*
-
 ### Chunk Viewer with Citations
 <img src="screenshots/img2_chunks.png" alt="Chunk Viewer" width="800" />
-
-*Navigate through source chunks with page-level precision*
 
 ### AI-Powered Chat
 <img src="screenshots/img3_query.png" alt="Chat Interface" width="800" />
