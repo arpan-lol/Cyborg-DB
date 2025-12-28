@@ -36,7 +36,7 @@ async function fetchChunks(sessionId: string, attachmentId: string): Promise<Chu
   }
 
   const data = await response.json();
-  return data.chunks.map((chunk: any, idx: number) => ({
+  return data.chunks.map((chunk: any) => ({
     id: `chunk-${chunk.index}`,
     content: chunk.content,
     index: chunk.index,

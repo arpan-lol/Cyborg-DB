@@ -125,7 +125,7 @@ export default function FilePanel({ attachments, selectedFile, onClose, onDocume
             collapsible={true}
             collapsedSize={4}
           >
-            <LogsPanel logs={logs} isDocumentOpen={true} sessionId={sessionId} />
+            <LogsPanel logs={logs} sessionId={sessionId} />
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
@@ -228,7 +228,7 @@ export default function FilePanel({ attachments, selectedFile, onClose, onDocume
           collapsible={true}
           collapsedSize={4}
         >
-          <LogsPanel logs={logs} isDocumentOpen={false} sessionId={sessionId} />
+          <LogsPanel logs={logs} sessionId={sessionId} />
         </ResizablePanel>
       </ResizablePanelGroup>
 

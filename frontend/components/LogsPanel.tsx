@@ -10,11 +10,10 @@ import { cn } from '@/lib/utils';
 
 interface LogsPanelProps {
   logs: EngineEvent[];
-  isDocumentOpen: boolean;
   sessionId: string;
 }
 
-export default function LogsPanel({ logs, isDocumentOpen, sessionId }: LogsPanelProps) {
+export default function LogsPanel({ logs, sessionId }: LogsPanelProps) {
   const logsEndRef = useRef<HTMLDivElement>(null);
   const [chunkViewerOpen, setChunkViewerOpen] = useState(false);
   const [selectedLog, setSelectedLog] = useState<EngineEvent | null>(null);

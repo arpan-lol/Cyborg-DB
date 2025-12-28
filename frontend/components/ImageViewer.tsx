@@ -3,7 +3,7 @@
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ZoomIn, ZoomOut, RotateCw, Maximize2, Loader2 } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, Loader2 } from 'lucide-react';
 import { useAuthenticatedUrl } from '@/lib/use-authenticated-url';
 
 interface ImageViewerProps {

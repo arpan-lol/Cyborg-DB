@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { setJwtCookie } from '@/lib/auth-cookies';
 
 export async function POST() {
   try {

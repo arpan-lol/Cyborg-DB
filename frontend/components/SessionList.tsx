@@ -58,7 +58,7 @@ export default function SessionList() {
       await updateTitle.mutateAsync({ sessionId, title: editingTitle.trim() });
       setEditingConversationId(null);
       setEditingTitle('');
-    } catch (error) {
+    } catch {
       toast.error('Failed to rename');
     }
   };
@@ -79,7 +79,7 @@ export default function SessionList() {
     if (!conversationToDelete) return;
     try {
       await deleteConversation.mutateAsync(conversationToDelete);
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete');
     } finally {
       setDeleteDialogOpen(false);

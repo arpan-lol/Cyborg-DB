@@ -49,7 +49,7 @@ function ChatMessageComponent({ message, userAvatar, userName, isLoading, isStre
       setCopied(true);
       setCopyError(false);
       setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
+    } catch {
       setCopyError(true);
       toast.error('Failed to copy');
       setTimeout(() => setCopyError(false), 2000);

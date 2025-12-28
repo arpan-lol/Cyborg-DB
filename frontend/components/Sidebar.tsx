@@ -5,8 +5,6 @@ import * as React from 'react';
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { ConversationsList } from './sidebar/ConversationsList';
-import { cn } from '@/lib/utils';
-
 import { NavUser } from '@/components/NavUser';
 import {
   Sidebar,

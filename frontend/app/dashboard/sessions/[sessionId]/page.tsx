@@ -13,7 +13,7 @@ import ChatComposer from '@/components/ChatComposer';
 import AttachmentSelector from '@/components/AttachmentSelector';
 import FilePanel from '@/components/FilePanel';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowLeft, Loader2, FileText } from 'lucide-react';
 import type { Message, EngineEvent, StreamStatus } from '@/lib/types';
@@ -158,7 +158,6 @@ export default function ChatSessionPage() {
   const uploadFile = useUploadFile();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const mergedAttachments = useMemo(() => {
     const real = sessionAttachments || [];
@@ -404,10 +403,12 @@ export default function ChatSessionPage() {
   }, [sessionAttachments]);
 
   useEffect(() => {
+    const eventSources = eventSourcesRef.current;
+    const activeStreams = activeStreamsRef.current;
     return () => {
-      eventSourcesRef.current.forEach(es => es.close());
-      eventSourcesRef.current.clear();
-      activeStreamsRef.current.clear();
+      eventSources.forEach(es => es.close());
+      eventSources.clear();
+      activeStreams.clear();
     };
   }, []);
 
