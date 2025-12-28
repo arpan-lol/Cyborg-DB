@@ -17,20 +17,21 @@
 ## Screenshots
 
 <div align="center">
-<img src="screenshots/img5_final.png" alt="Final Response with Document Viewer" width="800" />
+  
+<img width="1919" height="896" alt="image" src="https://github.com/user-attachments/assets/b1898d89-4d72-4002-b31a-4a399ff935fb" />
+
+<img width="1919" height="903" alt="image" src="https://github.com/user-attachments/assets/0214fb4d-fb27-44a6-8027-3788fe15b798" />
+
+<img width="1919" height="904" alt="image" src="https://github.com/user-attachments/assets/6187b6ae-e299-4288-a2f9-a9789f3963d6" />
+
 
 ### Document Upload & Processing
-<img src="screenshots/img1_documents_upload.png" alt="Document Upload" width="800" />
+
+<img width="1919" height="904" alt="Screenshot 2025-12-28 222112" src="https://github.com/user-attachments/assets/19c18438-3e2a-45ab-95ad-574f100a9372" />
 
 ### Chunk Viewer with Citations
-<img src="screenshots/img2_chunks.png" alt="Chunk Viewer" width="800" />
 
-### AI-Powered Chat
-<img src="screenshots/img3_query.png" alt="Chat Interface" width="800" />
-
-<img src="screenshots/img4_response.png" alt="Chat Interface" width="800" />
-
-*Get answers with inline citations back to your documents*
+<img width="1919" height="904" alt="Screenshot 2025-12-28 222342" src="https://github.com/user-attachments/assets/9dff051d-7715-4bec-8896-56f34b2d9d41" />
 
 </div>
 
