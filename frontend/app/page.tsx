@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 // Animated cipher text effect
 function CipherText({ text, className }: { text: string; className?: string }) {
@@ -27,94 +27,40 @@ function CipherText({ text, className }: { text: string; className?: string }) {
   return <span className={className}>{displayText}</span>;
 }
 
-// Scanning line effect
-function ScanLine() {
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      <div 
-        className="absolute w-full h-px bg-gradient-to-r from-transparent via-neutral-400/50 to-transparent animate-scan"
-      />
-    </div>
-  );
-}
-
-// Noise texture overlay
-function NoiseOverlay() {
-  return (
-    <div 
-      className="fixed inset-0 pointer-events-none opacity-[0.015] z-50"
-      style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-      }}
-    />
-  );
-}
-
 export default function LandingPage() {
-  const [scrollY, setScrollY] = useState(0);
-  
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
   return (
-    <div className="bg-[#0a0a0a] text-[#fafafa] min-h-screen [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-      <NoiseOverlay />
+    <div className="bg-[#0a0a0a] text-[#fafafa] min-h-screen">
       
-      {/* Hero - Full viewport */}
+      {/* Hero Section */}
       <section className="relative h-screen flex flex-col">
-        {/* Gradient mesh background */}
-        <div className="absolute inset-0 overflow-hidden">
-          {/* Base gradient */}
-          <div className="absolute inset-0 bg-[#0a0a0a]" />
+        {/* Clean gradient background */}
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0f0f0f] via-[#0a0a0a] to-[#050505]" />
           
-          {/* Grid lines - visible */}
+          {/* Square spotlight from top */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-[500px] bg-gradient-to-b from-white/[0.05] to-transparent" />
+          
+          {/* Grid pattern */}
           <div 
             className="absolute inset-0"
             style={{
-              backgroundImage: `
-                linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)
-              `,
-              backgroundSize: '60px 60px',
+              backgroundImage: `linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+                               linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)`,
+              backgroundSize: '80px 80px',
             }}
           />
           
-          {/* Radial glow from top center */}
-          <div 
-            className="absolute -top-[200px] left-1/2 -translate-x-1/2 w-[1200px] h-[800px]"
-            style={{
-              background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 40%, transparent 70%)',
-            }}
-          />
-          
-          {/* Side glows */}
-          <div 
-            className="absolute top-1/4 -left-[100px] w-[400px] h-[400px]"
-            style={{
-              background: 'radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 60%)',
-            }}
-          />
-          <div 
-            className="absolute top-1/2 -right-[100px] w-[350px] h-[350px]"
-            style={{
-              background: 'radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 60%)',
-            }}
-          />
-          
-          {/* Bottom fade */}
+          {/* Fade at bottom */}
           <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0a0a0a] to-transparent" />
         </div>
-        
+
         {/* Nav */}
-        <nav className="relative z-20 px-6 sm:px-12 py-6 flex items-center justify-between">
+        <nav className="relative z-10 px-6 sm:px-12 py-6 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6 text-white">
               <path d="M4 4L12 20L20 4" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            <span className="text-sm font-semibold tracking-wider">VEIL</span>
+            <span className="text-sm font-medium tracking-wide">VEIL</span>
           </div>
           <div className="flex items-center gap-6">
             <Link href="#features" className="text-xs text-white/50 hover:text-white transition-colors tracking-wide">
@@ -129,7 +75,7 @@ export default function LandingPage() {
           </div>
         </nav>
 
-        {/* Hero content - centered */}
+        {/* Hero content */}
         <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center">
           <h1 className="text-[clamp(2.5rem,8vw,7rem)] font-light leading-[0.9] tracking-tight mb-8">
             <CipherText text="Search everything." />
@@ -165,8 +111,6 @@ export default function LandingPage() {
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
           <div className="w-px h-12 bg-gradient-to-b from-transparent to-white/20" />
         </div>
-        
-        <ScanLine />
       </section>
 
       {/* How it works */}
@@ -349,25 +293,12 @@ export default function LandingPage() {
       </footer>
 
       <style jsx global>{`
-        /* Hide scrollbar but allow scrolling */
         html {
           scrollbar-width: none;
           -ms-overflow-style: none;
         }
         html::-webkit-scrollbar {
           display: none;
-        }
-        body {
-          overflow-y: scroll;
-        }
-        
-        @keyframes scan {
-          0% { top: 0; opacity: 0; }
-          50% { opacity: 1; }
-          100% { top: 100%; opacity: 0; }
-        }
-        .animate-scan {
-          animation: scan 4s ease-in-out infinite;
         }
       `}</style>
     </div>
