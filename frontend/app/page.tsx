@@ -637,7 +637,7 @@ export default function LandingPage() {
         <div className="relative max-w-xl mx-auto text-center">
           <h2 className="text-2xl sm:text-4xl font-light mb-4 text-white/90">Protect sources. Expose truth.</h2>
           <p className="text-white/45 mb-10 text-sm sm:text-base">
-            Investigative journalism shouldn't require choosing between efficiency and protection.
+            Investigative journalism shouldn&apos;t require choosing between efficiency and protection.
           </p>
           <Link 
             href="/auth/login" 
