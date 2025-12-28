@@ -412,6 +412,15 @@ export default function ChatSessionPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        reset();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, reset]);
+
   const handleSendMessage = async (content: string) => {
     const userMsg: Message = {
       id: `temp-user-${Date.now()}`,
