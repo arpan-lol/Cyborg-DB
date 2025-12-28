@@ -321,7 +321,6 @@ Built by:
 - **Ashish K. Chowdhary**  
 - **Pratham Gupta**
 - **Himanshu Gupta**
-- **Aditya**
 
 ---
 
