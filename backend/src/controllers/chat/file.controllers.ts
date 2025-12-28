@@ -19,9 +19,23 @@ export class FileController {
     }
 
     try {
+      // Find attachment by URL path or by storedFilename in metadata
+      // Handle both forward slash and backslash paths (Windows compatibility)
+      const urlWithForwardSlash = `uploads/${filename}`;
+      const urlWithBackslash = `uploads\\${filename}`;
+      
       const attachment = await prisma.attachment.findFirst({
         where: {
-          url: path.join('uploads', filename),
+          OR: [
+            { url: urlWithForwardSlash },
+            { url: urlWithBackslash },
+            {
+              metadata: {
+                path: ['storedFilename'],
+                equals: filename,
+              },
+            },
+          ],
         },
         include: {
           message: {

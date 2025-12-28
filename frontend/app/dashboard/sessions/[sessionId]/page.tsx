@@ -15,7 +15,7 @@ import FilePanel from '@/components/FilePanel';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, Loader2, MessageSquare, Sparkles } from 'lucide-react';
+import { ArrowLeft, Loader2, FileText } from 'lucide-react';
 import type { Message, EngineEvent, StreamStatus } from '@/lib/types';
 import { toast } from 'sonner';
 
@@ -520,11 +520,8 @@ export default function ChatSessionPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen gap-4">
-        <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-        <p className="text-muted-foreground">Loading conversation...</p>
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -555,65 +552,46 @@ export default function ChatSessionPage() {
   );
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-background">
       {/* Chat Section */}
       <div className="flex flex-col flex-1 min-w-0 h-full">
-        <Card className="border-0 border-b p-0 bg-background flex-shrink-0 rounded-none">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2 min-w-0">
-                <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard/sessions')}>
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-                <div className="min-w-0">
-                  <CardTitle className="truncate">
-                    {isTypingTitle ? displayTitle : (conversation.title || 'Untitled Conversation')}
-                    {isTypingTitle && <span className="animate-pulse">|</span>}
-                  </CardTitle>
-                  <p 
-                    className="text-sm text-muted-foreground truncate"
-                    title={new Date(conversation.createdAt).toLocaleString('en-US', {
-                      weekday: 'long',
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric',
-                      hour: 'numeric',
-                      minute: '2-digit',
-                      second: '2-digit',
-                      hour12: true
-                    })}
-                  >
-                    Created {new Date(conversation.createdAt).toLocaleDateString()} at {new Date(conversation.createdAt).toLocaleTimeString('en-US', {
-                      hour: 'numeric',
-                      minute: '2-digit',
-                      hour12: true
-                    })}
-                  </p>
-                </div>
-              </div>
-              <AttachmentSelector
-                sessionId={sessionId}
-                attachments={sessionAttachments || []}
-                selectedIds={selectedContextIds}
-                onSelectionChange={(ids) => setSelectedContextIds(ids)}
-                isLoading={isLoadingAttachments}
-                flashTrigger={flashTrigger}
-              />
+        {/* Header */}
+        <div className="flex items-center justify-between gap-2 sm:gap-4 px-4 sm:px-6 py-3 border-b border-border bg-background">
+          <div className="flex items-center gap-3 min-w-0">
+            <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 rounded-lg" onClick={() => router.push('/dashboard/sessions')}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div className="min-w-0">
+              <h1 className="text-sm font-medium truncate max-w-[180px] sm:max-w-none">
+                {isTypingTitle ? displayTitle : (conversation.title || 'New Chat')}
+                {isTypingTitle && <span className="animate-pulse text-muted-foreground">|</span>}
+              </h1>
+              <p className="text-xs text-muted-foreground">
+                {new Date(conversation.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+              </p>
             </div>
-          </CardHeader>
-        </Card>
+          </div>
+          <AttachmentSelector
+            sessionId={sessionId}
+            attachments={sessionAttachments || []}
+            selectedIds={selectedContextIds}
+            onSelectionChange={(ids) => setSelectedContextIds(ids)}
+            isLoading={isLoadingAttachments}
+            flashTrigger={flashTrigger}
+          />
+        </div>
 
         <div className="flex-1 min-h-0 overflow-hidden">
-          <ScrollArea className="h-full bg-background">
-            <div className="p-4">
+          <ScrollArea className="h-full">
+            <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
             {displayMessages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-[60vh] text-center">
-                <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 mb-4">
-                  <MessageSquare className="h-10 w-10 text-primary/50" />
+              <div className="flex flex-col items-center justify-center h-[55vh] text-center px-4">
+                <div className="w-14 h-14 rounded-xl bg-muted flex items-center justify-center mb-5">
+                  <FileText className="h-6 w-6 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-medium mb-2">Start a conversation</h3>
-                <p className="text-muted-foreground max-w-sm">
-                  Upload documents and ask questions to get AI-powered insights from your files.
+                <h3 className="text-base font-medium mb-2">Start a conversation</h3>
+                <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
+                  Upload documents and ask questions. All data is encrypted end-to-end.
                 </p>
               </div>
             ) : (
@@ -802,8 +780,8 @@ export default function ChatSessionPage() {
       </div>
       </div>
 
-      {/* File Panel Section */}
-      <div className="w-[500px] flex-shrink-0 h-full">
+      {/* File Panel Section - Hidden on mobile */}
+      <div className="hidden lg:block w-[400px] xl:w-[460px] flex-shrink-0 h-full border-l border-border">
         <FilePanel
           attachments={mergedAttachments}
           selectedFile={selectedPDF}

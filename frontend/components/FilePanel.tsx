@@ -2,20 +2,23 @@
 
 import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { FileText, X, ArrowLeft, Trash2, ExternalLink, FileImage, FileSpreadsheet, File } from 'lucide-react';
+import { FileText, X, ArrowLeft, Trash2, Eye, Image, Table, File, Loader2 } from 'lucide-react';
 import { EngineEvent, StreamStatus } from '@/lib/types';
 import LogsPanel from './LogsPanel';
 import ChunkViewer from './ChunkViewer';
 import { Progress } from '@/components/ui/progress';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { ImperativePanelHandle } from 'react-resizable-panels';
+import { cn } from '@/lib/utils';
 
 const FileViewer = dynamic(() => import('./FileViewer'), {
-  loading: () => <div>Loading file...</div>,
+  loading: () => (
+    <div className="flex items-center justify-center h-full">
+      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+    </div>
+  ),
 });
 
 interface Attachment {
@@ -42,6 +45,22 @@ interface FilePanelProps {
   sessionId: string;
 }
 
+function getFileIcon(filename: string) {
+  const ext = filename.toLowerCase().split('.').pop() || '';
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return <Image className="h-4 w-4" />;
+  if (['xls', 'xlsx', 'csv'].includes(ext)) return <Table className="h-4 w-4" />;
+  if (ext === 'pdf') return <FileText className="h-4 w-4" />;
+  if (['doc', 'docx'].includes(ext)) return <FileText className="h-4 w-4" />;
+  if (['ppt', 'pptx'].includes(ext)) return <FileText className="h-4 w-4" />;
+  return <File className="h-4 w-4" />;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function FilePanel({ attachments, selectedFile, onClose, onDocumentClick, onDeleteAttachment, fileProcessingProgress, logs = [], sessionId }: FilePanelProps) {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [chunkViewerOpen, setChunkViewerOpen] = useState(false);
@@ -49,14 +68,9 @@ export default function FilePanel({ attachments, selectedFile, onClose, onDocume
   const logsPanelRef = useRef<ImperativePanelHandle>(null);
   const isDocumentOpen = !!selectedFile;
 
-
   useEffect(() => {
     if (selectedFile?.url) {
-      if (selectedFile.targetPage) {
-        setCurrentPage(selectedFile.targetPage);
-      } else {
-        setCurrentPage(1);
-      }
+      setCurrentPage(selectedFile.targetPage || 1);
     }
   }, [selectedFile?.url, selectedFile?.targetPage]);
 
@@ -65,205 +79,34 @@ export default function FilePanel({ attachments, selectedFile, onClose, onDocume
     setChunkViewerOpen(true);
   };
 
-  const getFileIcon = (filename: string) => {
-    const ext = filename.toLowerCase().split('.').pop() || '';
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return <FileImage className="h-4 w-4 text-green-500" />;
-    if (['xls', 'xlsx', 'csv'].includes(ext)) return <FileSpreadsheet className="h-4 w-4 text-green-600" />;
-    if (ext === 'pdf') return <FileText className="h-4 w-4 text-red-500" />;
-    if (['doc', 'docx'].includes(ext)) return <FileText className="h-4 w-4 text-blue-500" />;
-    if (['ppt', 'pptx'].includes(ext)) return <FileText className="h-4 w-4 text-red-600" />;
-    return <File className="h-4 w-4 text-muted-foreground" />;
-  };
-
   const viewableAttachments = attachments.filter(
-    (att) => {
-      const isProcessed = att.metadata?.processed;
-      const isTemporary = att.isTemporary;
-      return isProcessed || isTemporary;
-    }
+    (att) => att.metadata?.processed || att.isTemporary
   );
-  
 
   useEffect(() => {
     if (logsPanelRef.current) {
-      if (isDocumentOpen) {
-        logsPanelRef.current.resize(4);
-      } else {
-        logsPanelRef.current.resize(30);
-      }
+      logsPanelRef.current.resize(isDocumentOpen ? 4 : 30);
     }
   }, [isDocumentOpen]);
 
-  if (!selectedFile && viewableAttachments.length === 0) {
-    return (
-      <div className="h-full">
-        <ResizablePanelGroup direction="vertical" className="h-full">
-          <ResizablePanel defaultSize={70} className="flex flex-col">
-            <Card className="h-full rounded-none border-0 border-l border-b-0">
-              <CardHeader>
-                <CardTitle className="text-lg">Files</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-                  <FileText className="h-12 w-12 mb-4 opacity-50" />
-                  <p className="text-sm text-center">No files available</p>
-                </div>
-              </CardContent>
-            </Card>
-          </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel 
-            ref={logsPanelRef}
-            defaultSize={30}
-            minSize={10}
-            maxSize={70}
-            collapsible={true}
-            collapsedSize={4}
-          >
-            <LogsPanel logs={logs} isDocumentOpen={false} sessionId={sessionId} />
-          </ResizablePanel>
-        </ResizablePanelGroup>
-      </div>
-    );
-  }
-
-  if (!selectedFile) {
+  // File viewer is open
+  if (selectedFile) {
     return (
       <div className="h-full">
         <ResizablePanelGroup direction="vertical" className="h-full">
           <ResizablePanel defaultSize={70} className="flex flex-col overflow-hidden">
-            <Card className="h-full rounded-none border-0 border-l border-b-0 flex flex-col overflow-hidden">
-              <CardHeader className="flex-shrink-0">
-                <CardTitle className="text-lg">Files ({viewableAttachments.length})</CardTitle>
-              </CardHeader>
-              <CardContent className="flex-1 p-0 overflow-hidden">
-                <ScrollArea className="h-full">
-                  <div className="px-4 py-2 space-y-2">
-              {viewableAttachments.map((att) => {
-                const fileProgress = fileProcessingProgress?.[att.id];
-                const isFileProcessing = fileProgress?.status === 'processing' || fileProgress?.status === 'connected';
-                const progressValue = isFileProcessing ? fileProgress?.progress : undefined;
-                
-                if (att.isTemporary || progressValue !== undefined) {
-                  console.log('[FilePanel] Progress:', {
-                    filename: att.filename,
-                    isTemporary: att.isTemporary,
-                    fileProgress,
-                    isFileProcessing,
-                    progressValue,
-                  });
-                }
-
-                return (
-                  <Card
-                    key={att.id}
-                    className={`p-3 hover:bg-muted/50 transition-colors mb-2 ${att.isTemporary ? 'opacity-60' : ''}`}
-                  >
-                    <div className="flex items-center gap-2">
-                      {getFileIcon(att.filename)}
-                      <div 
-                        className="flex-1 min-w-0 cursor-pointer"
-                        onClick={() => !att.isTemporary && onDocumentClick?.(att)}
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="text-sm font-medium truncate max-w-[350px]" title={att.filename}>{att.filename}</p>
-                          {att.isTemporary && (
-                            <Badge variant="outline" className="text-xs">
-                              Uploading...
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {(att.size / 1024).toFixed(1)} KB
-                        </p>
-                        
-                        {progressValue !== undefined && (
-                          <div className="mt-2">
-                            <Progress value={progressValue} className="h-1" />
-                          </div>
-                        )}
-                      </div>
-
-                      {!att.isTemporary && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleViewChunks(att);
-                            }}
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onDeleteAttachment?.(att.id);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </Card>
-                );
-              })}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel 
-            ref={logsPanelRef}
-            defaultSize={30}
-            minSize={10}
-            maxSize={70}
-            collapsible={true}
-            collapsedSize={4}
-          >
-            <LogsPanel logs={logs} isDocumentOpen={false} sessionId={sessionId} />
-          </ResizablePanel>
-        </ResizablePanelGroup>
-        {selectedAttachment && (
-          <ChunkViewer
-            open={chunkViewerOpen}
-            onOpenChange={setChunkViewerOpen}
-            sessionId={sessionId}
-            attachmentId={selectedAttachment.id}
-            filename={selectedAttachment.filename}
-          />
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="h-full">
-      <ResizablePanelGroup direction="vertical" className="h-full">
-        <ResizablePanel defaultSize={70} className="flex flex-col overflow-hidden">
-          <Card className="h-full flex flex-col overflow-hidden rounded-none border-0 border-l border-b-0 gap-0">
-            <CardHeader className="flex-shrink-0 pb-0">
-              <div className="flex items-center gap-3">
-                <Button variant="ghost" size="icon" onClick={onClose}>
-                  <ArrowLeft className="h-4 w-4" />
-                </Button>
-                <div className="flex-1 min-w-0">
-                  <CardTitle className="text-lg truncate">{selectedFile.filename}</CardTitle>
-                </div>
-                <Button variant="ghost" size="icon" onClick={onClose}>
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-1 overflow-hidden p-3 pt-0 min-h-0">
+            {/* Header */}
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose}>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <span className="flex-1 text-sm font-medium truncate">{selectedFile.filename}</span>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            {/* File viewer */}
+            <div className="flex-1 overflow-hidden p-2">
               <FileViewer
                 fileUrl={selectedFile.url}
                 filename={selectedFile.filename}
@@ -271,8 +114,110 @@ export default function FilePanel({ attachments, selectedFile, onClose, onDocume
                 currentPage={currentPage}
                 onPageChange={setCurrentPage}
               />
-            </CardContent>
-          </Card>
+            </div>
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel 
+            ref={logsPanelRef}
+            defaultSize={30}
+            minSize={10}
+            maxSize={70}
+            collapsible={true}
+            collapsedSize={4}
+          >
+            <LogsPanel logs={logs} isDocumentOpen={true} sessionId={sessionId} />
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </div>
+    );
+  }
+
+  // File list view
+  return (
+    <div className="h-full">
+      <ResizablePanelGroup direction="vertical" className="h-full">
+        <ResizablePanel defaultSize={70} className="flex flex-col overflow-hidden">
+          {/* Header */}
+          <div className="px-4 py-3 border-b border-border">
+            <h2 className="text-sm font-medium">
+              Files {viewableAttachments.length > 0 && `(${viewableAttachments.length})`}
+            </h2>
+          </div>
+
+          {/* File list */}
+          <ScrollArea className="flex-1">
+            <div className="p-3 space-y-1">
+              {viewableAttachments.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                  <FileText className="h-8 w-8 mb-3 opacity-30" />
+                  <p className="text-sm">No files uploaded</p>
+                </div>
+              ) : (
+                viewableAttachments.map((att) => {
+                  const fileProgress = fileProcessingProgress?.[att.id];
+                  const isProcessing = fileProgress?.status === 'processing' || fileProgress?.status === 'connected';
+                  const progressValue = isProcessing ? fileProgress?.progress : undefined;
+
+                  return (
+                    <div
+                      key={att.id}
+                      onClick={() => !att.isTemporary && onDocumentClick?.(att)}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-lg border border-border",
+                        "hover:bg-muted/50 transition-colors",
+                        !att.isTemporary && "cursor-pointer",
+                        att.isTemporary && "opacity-60"
+                      )}
+                    >
+                      <div className="flex-shrink-0 w-8 h-8 rounded bg-muted flex items-center justify-center text-muted-foreground">
+                        {getFileIcon(att.filename)}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate" title={att.filename}>
+                          {att.filename}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatFileSize(att.size)}
+                          {att.isTemporary && ' • Uploading...'}
+                        </p>
+                        {progressValue !== undefined && (
+                          <Progress value={progressValue} className="h-1 mt-2" />
+                        )}
+                      </div>
+
+                      {!att.isTemporary && (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewChunks(att);
+                            }}
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 hover:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDeleteAttachment?.(att.id);
+                            }}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </ScrollArea>
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel 
@@ -283,9 +228,19 @@ export default function FilePanel({ attachments, selectedFile, onClose, onDocume
           collapsible={true}
           collapsedSize={4}
         >
-          <LogsPanel logs={logs} isDocumentOpen={true} sessionId={sessionId} />
+          <LogsPanel logs={logs} isDocumentOpen={false} sessionId={sessionId} />
         </ResizablePanel>
       </ResizablePanelGroup>
+
+      {selectedAttachment && (
+        <ChunkViewer
+          open={chunkViewerOpen}
+          onOpenChange={setChunkViewerOpen}
+          sessionId={sessionId}
+          attachmentId={selectedAttachment.id}
+          filename={selectedAttachment.filename}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 {
-  "name": "cyborgdb",
-  "description": "CyborgDB - AI-powered document intelligence with military-grade encryption. Upload, search, and chat with your documents securely using encrypted vector storage.",
+  "name": "veil",
+  "description": "Veil - Encrypted document intelligence. Search millions of documents without exposing your sources.",
   "version": "0.1.0",
   "private": true,
   "scripts": {

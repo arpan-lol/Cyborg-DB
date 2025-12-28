@@ -12,10 +12,22 @@ export const OAuthButtons = () => {
         type="button"
         onClick={initiateGoogleAuth}
         disabled={!googleOAuthEnabled || isLoading}
-        className="flex items-center justify-center gap-3 w-full h-11 rounded-lg border border-border bg-background hover:bg-muted transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex items-center justify-center gap-3 w-full h-12 rounded-xl transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        style={{ 
+          backgroundColor: '#fafafa',
+          color: '#0a0a0a'
+        }}
+        onMouseEnter={(e) => {
+          if (!e.currentTarget.disabled) {
+            e.currentTarget.style.backgroundColor = 'rgba(250,250,250,0.9)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = '#fafafa';
+        }}
       >
         {isLoading ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
+          <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#0a0a0a' }} />
         ) : (
           <svg className="w-4 h-4" viewBox="0 0 24 24">
             <path
@@ -36,15 +48,21 @@ export const OAuthButtons = () => {
             />
           </svg>
         )}
-        Continue with Google
+        <span style={{ color: '#0a0a0a' }}>Continue with Google</span>
       </button>
       
       {!isLoading && !googleOAuthEnabled && (
-        <div className="flex items-start gap-2 p-3 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/50 text-sm">
-          <AlertCircle className="w-4 h-4 mt-0.5 text-amber-600 dark:text-amber-500 flex-shrink-0" />
-          <div className="text-amber-800 dark:text-amber-200">
-            <p className="font-medium">Google OAuth not configured</p>
-            <p className="text-xs mt-1 opacity-80">
+        <div 
+          className="flex items-start gap-3 p-4 rounded-xl text-sm"
+          style={{ 
+            border: '1px solid rgba(251, 191, 36, 0.3)',
+            backgroundColor: 'rgba(251, 191, 36, 0.1)'
+          }}
+        >
+          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: '#fbbf24' }} />
+          <div>
+            <p className="font-medium" style={{ color: '#fafafa' }}>Google OAuth not configured</p>
+            <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>
               Add google-creds.json to the backend directory.
             </p>
           </div>

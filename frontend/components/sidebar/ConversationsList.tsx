@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
 import { ConversationItem } from './ConversationItem';
 import {
   SidebarGroup,
@@ -42,7 +42,7 @@ export function ConversationsList({
   return (
     <SidebarGroup>
       <SidebarGroupLabel className="flex items-center justify-between px-0">
-        <span>Conversations</span>
+        <span className="text-xs">Sessions</span>
         <Button
           variant="ghost"
           size="icon"
@@ -50,13 +50,19 @@ export function ConversationsList({
           onClick={onCreateConversation}
           disabled={isCreating}
         >
-          <Plus className="h-4 w-4" />
+          {isCreating ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Plus className="h-3.5 w-3.5" />
+          )}
         </Button>
       </SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
           {isLoading && (
-            <div className="px-2 py-1 text-sm text-muted-foreground">Loading...</div>
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            </div>
           )}
           {conversations?.map((conversation) => (
             <ConversationItem
@@ -73,8 +79,8 @@ export function ConversationsList({
             />
           ))}
           {!isLoading && conversations?.length === 0 && (
-            <div className="px-2 py-1 text-sm text-muted-foreground">
-              No conversations yet
+            <div className="px-2 py-4 text-xs text-muted-foreground text-center">
+              No sessions
             </div>
           )}
         </SidebarMenu>

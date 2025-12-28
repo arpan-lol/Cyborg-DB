@@ -11,9 +11,9 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import { FileText } from 'lucide-react';
+import { FileText, Check } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 interface Attachment {
   id: string;
@@ -37,6 +37,12 @@ interface AttachmentSelectorProps {
   flashTrigger?: number;
 }
 
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function AttachmentSelector({
   attachments,
   selectedIds,
@@ -55,13 +61,7 @@ export default function AttachmentSelector({
     }
   }, [flashTrigger]);
 
-
-  const processedAttachments = attachments.filter(
-    (att) => {
-      return att.metadata?.processed;
-    }
-  );
-  
+  const processedAttachments = attachments.filter((att) => att.metadata?.processed);
 
   const toggleAttachment = (id: string) => {
     if (selectedIds.includes(id)) {
@@ -86,24 +86,29 @@ export default function AttachmentSelector({
           variant="outline" 
           size="sm" 
           disabled={isLoading} 
-          className={isFlashing ? "animate-pulse border-primary" : ""}
+          className={cn(
+            "h-8 text-xs",
+            isFlashing && "ring-2 ring-foreground/20"
+          )}
         >
-          <FileText className="h-4 w-4 mr-2" />
-          Select Files ({selectedIds.length})
+          <FileText className="h-3.5 w-3.5 mr-1.5" />
+          Files ({selectedIds.length})
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] max-h-[80vh] flex flex-col">
-        <DialogHeader className="flex-shrink-0">
-          <DialogTitle>Select Files for Context</DialogTitle>
-          <DialogDescription>
-            Choose which files to use for answering your next question
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-base">Select Context</DialogTitle>
+          <DialogDescription className="text-sm">
+            Choose files to include in your query
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 overflow-y-auto flex-1 min-h-0">
+        
+        <div className="space-y-4">
           <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
+              className="h-7 text-xs"
               onClick={selectAll}
               disabled={processedAttachments.length === 0}
             >
@@ -112,56 +117,60 @@ export default function AttachmentSelector({
             <Button
               variant="outline"
               size="sm"
+              className="h-7 text-xs"
               onClick={clearAll}
               disabled={selectedIds.length === 0}
             >
-              Clear All
+              Clear
             </Button>
           </div>
 
           {processedAttachments.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No processed documents available
+            <div className="text-center py-8 text-muted-foreground text-sm">
+              No documents available
             </div>
           ) : (
-            <ScrollArea className="h-[300px] rounded-md border p-4">
-              <div className="space-y-3">
-                {processedAttachments.map((attachment) => (
-                  <div
-                    key={attachment.id}
-                    className="flex items-start space-x-3 p-2 rounded hover:bg-muted cursor-pointer"
-                    onClick={() => toggleAttachment(attachment.id)}
-                  >
-                    <Checkbox
-                      checked={selectedIds.includes(attachment.id)}
-                      onCheckedChange={() => toggleAttachment(attachment.id)}
-                    />
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <div className="text-sm font-medium leading-none">
+            <ScrollArea className="h-[280px]">
+              <div className="space-y-1">
+                {processedAttachments.map((attachment) => {
+                  const isSelected = selectedIds.includes(attachment.id);
+                  return (
+                    <div
+                      key={attachment.id}
+                      className={cn(
+                        "flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors",
+                        isSelected ? "bg-muted" : "hover:bg-muted/50"
+                      )}
+                      onClick={() => toggleAttachment(attachment.id)}
+                    >
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => toggleAttachment(attachment.id)}
+                        className="data-[state=checked]:bg-foreground data-[state=checked]:border-foreground"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">
                           {attachment.filename}
-                        </div>
-                        {attachment.bm25indexStatus === 'completed' && (
-                          <Badge variant="secondary" className="text-xs">
-                            BM25 Indexed
-                          </Badge>
-                        )}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatSize(attachment.size)}
+                          {attachment.metadata?.chunkCount && (
+                            <> • {attachment.metadata.chunkCount} chunks</>
+                          )}
+                        </p>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {(attachment.size / 1024).toFixed(1)} KB
-                        {attachment.metadata?.chunkCount && (
-                          <> • {attachment.metadata.chunkCount} chunks</>
-                        )}
-                      </div>
+                      {isSelected && (
+                        <Check className="h-4 w-4 text-foreground flex-shrink-0" />
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </ScrollArea>
           )}
 
-          <div className="flex justify-end pt-4">
-            <Button onClick={() => setOpen(false)}>
+          <div className="flex justify-end pt-2 border-t border-border">
+            <Button size="sm" onClick={() => setOpen(false)}>
               Done
             </Button>
           </div>

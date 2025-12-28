@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { MessageSquare, Pencil, Trash2, Check, X } from 'lucide-react';
+import { FileText, Pencil, Trash2, Check, X } from 'lucide-react';
 import { SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,7 +55,7 @@ export function ConversationItem({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 flex-shrink-0"
+            className="h-6 w-6 flex-shrink-0"
             onClick={(e) => onEditSave(conversation.id, e)}
           >
             <Check className="h-3 w-3" />
@@ -63,7 +63,7 @@ export function ConversationItem({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 flex-shrink-0"
+            className="h-6 w-6 flex-shrink-0"
             onClick={onEditCancel}
           >
             <X className="h-3 w-3" />
@@ -73,12 +73,12 @@ export function ConversationItem({
         <div className="flex items-center gap-1 w-full">
           <SidebarMenuButton asChild className="cursor-pointer flex-1">
             <a href={`/dashboard/sessions/${conversation.id}`} className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4 flex-shrink-0" />
-              <span className="truncate">{conversation.title || 'Untitled Conversation'}</span>
+              <FileText className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+              <span className="truncate text-sm">{conversation.title || 'Untitled'}</span>
             </a>
           </SidebarMenuButton>
           {isHovered && (
-            <div className="flex items-center gap-0.5">
+            <div className="flex items-center">
               <Button
                 variant="ghost"
                 size="icon"
@@ -90,7 +90,7 @@ export function ConversationItem({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6"
+                className="h-6 w-6 hover:text-destructive"
                 onClick={(e) => onDelete(conversation.id, e)}
                 disabled={isDeleting}
               >

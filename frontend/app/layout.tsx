@@ -19,11 +19,11 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'CyborgDB',
-  description: 'AI-powered document intelligence with encrypted vector storage',
+  title: 'Veil',
+  description: 'Encrypted document intelligence. Search millions of documents without exposing your sources.',
   icons: {
-    icon: '/logo.png',
-    apple: '/logo.png',
+    icon: '/favicon.svg',
+    apple: '/favicon.svg',
   },
 }
 

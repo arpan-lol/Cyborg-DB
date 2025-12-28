@@ -16,7 +16,7 @@ export default function ChatComposer({
   onSend,
   onAttachmentClick,
   disabled = false,
-  placeholder = 'Type your message...',
+  placeholder = 'Ask a question...',
   loading = false,
 }: ChatComposerProps) {
   const [message, setMessage] = useState('');
@@ -26,7 +26,7 @@ export default function ChatComposer({
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       const scrollHeight = textareaRef.current.scrollHeight;
-      textareaRef.current.style.height = Math.min(scrollHeight, 200) + 'px';
+      textareaRef.current.style.height = Math.min(scrollHeight, 160) + 'px';
     }
   }, [message]);
 
@@ -47,79 +47,63 @@ export default function ChatComposer({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-4">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="w-full px-4 pb-4">
-      <div
-        className={cn(
-          "relative flex items-center gap-2 rounded-[28px] border bg-background px-1 py-1",
-          "shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_2px_4px_rgba(0,0,0,0.08)]",
-          "dark:shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_2px_4px_rgba(0,0,0,0.32)]",
-          "focus-within:border-foreground/20 transition-colors"
-        )}
-      >
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-4 sm:pb-6">
+      <div className="relative flex items-end gap-2 rounded-xl border border-border bg-card p-2 shadow-sm">
         <button
           type="button"
           onClick={onAttachmentClick}
           disabled={disabled}
-          aria-label="Add attachments"
           className={cn(
-            "flex-shrink-0 flex items-center justify-center",
-            "h-9 w-9 rounded-full ml-0.5",
-            "text-muted-foreground hover:cursor-pointer",
-            "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            "flex-shrink-0 flex items-center justify-center h-9 w-9 rounded-lg",
+            "text-muted-foreground hover:text-foreground hover:bg-muted",
+            "transition-colors",
             "disabled:opacity-50 disabled:cursor-not-allowed"
           )}
         >
-          <Paperclip className="h-5 w-5 " />
+          <Paperclip className="h-4 w-4" />
         </button>
 
-        <div className="flex-1 min-w-0 max-h-[200px] overflow-y-auto flex items-center">
-          <textarea
-            ref={textareaRef}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder}
-            disabled={disabled}
-            rows={1}
-            aria-label="Message input"
-            className={cn(
-              "w-full resize-none bg-transparent",
-              "text-sm leading-6 outline-none",
-              "placeholder:text-muted-foreground ",
-              "disabled:cursor-not-allowed disabled:opacity-50",
-              "py-2 px-1"
-            )}
-            style={{ 
-              height: 'auto',
-              minHeight: '24px',
-              maxHeight: '200px',
-            }}
-          />
-        </div>
+        <textarea
+          ref={textareaRef}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          disabled={disabled}
+          rows={1}
+          className={cn(
+            "flex-1 resize-none bg-transparent",
+            "text-sm leading-6 outline-none",
+            "placeholder:text-muted-foreground",
+            "disabled:cursor-not-allowed disabled:opacity-50",
+            "py-1.5 px-1 min-h-[32px] max-h-[160px]"
+          )}
+        />
 
         <button
           type="button"
           onClick={handleSend}
           disabled={disabled || !message.trim()}
-          aria-label="Send message"
           className={cn(
-            "flex-shrink-0 flex items-center justify-center",
-            "h-9 w-9 rounded-full mr-0.5",
-            "transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:cursor-pointer",
+            "flex-shrink-0 flex items-center justify-center h-9 w-9 rounded-lg",
+            "transition-all",
             message.trim() && !disabled
-              ? "bg-accent text-accent-foreground hover:bg-accent/90"
+              ? "bg-foreground text-background hover:opacity-90"
               : "bg-muted text-muted-foreground cursor-not-allowed"
           )}
         >
-          <Send className="h-5 w-5r" />
+          <Send className="h-4 w-4" />
         </button>
       </div>
+      <p className="hidden sm:block text-[10px] text-muted-foreground text-center mt-2 opacity-50">
+        Press Enter to send · Shift+Enter for new line
+      </p>
     </div>
   );
 }

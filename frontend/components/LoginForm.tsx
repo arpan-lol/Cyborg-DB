@@ -24,10 +24,10 @@ export function LoginForm({
         window.location.href = '/dashboard/sessions';
         return;
       }
-      setGuestError('Guest login failed. Please try again.');
+      setGuestError('Access denied. Please try again.');
     } catch (error) {
       console.error('Guest login failed:', error);
-      setGuestError('Network error. Please check your connection.');
+      setGuestError('Connection error. Check your network.');
     } finally {
       setLoadingGuest(false);
     }
@@ -39,10 +39,10 @@ export function LoginForm({
       
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border" />
+          <div className="w-full" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }} />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">or</span>
+          <span className="px-4" style={{ backgroundColor: '#0a0a0a', color: 'rgba(255,255,255,0.3)' }}>or</span>
         </div>
       </div>
 
@@ -50,18 +50,31 @@ export function LoginForm({
         type="button"
         onClick={handleGuestLogin}
         disabled={loadingGuest}
-        className="flex items-center justify-center gap-2 w-full h-11 rounded-lg border border-border bg-background hover:bg-muted transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex items-center justify-center gap-2 w-full h-12 rounded-xl transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        style={{ 
+          backgroundColor: 'transparent',
+          border: '1px solid rgba(255,255,255,0.1)',
+          color: '#fafafa'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)';
+          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'transparent';
+          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+        }}
       >
         {loadingGuest ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
+          <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#fafafa' }} />
         ) : (
-          <User className="w-4 h-4" />
+          <User className="w-4 h-4" style={{ color: 'rgba(255,255,255,0.5)' }} />
         )}
-        {loadingGuest ? 'Signing in...' : 'Continue as Guest'}
+        <span style={{ color: '#fafafa' }}>{loadingGuest ? 'Signing in...' : 'Continue as Guest'}</span>
       </button>
 
       {guestError && (
-        <p className="text-sm text-destructive text-center">{guestError}</p>
+        <p className="text-sm text-center" style={{ color: '#ef4444' }}>{guestError}</p>
       )}
     </div>
   );

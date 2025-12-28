@@ -3,9 +3,9 @@
 import { PanelLeftClose } from 'lucide-react';
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-import { Database } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { ConversationsList } from './sidebar/ConversationsList';
+import { cn } from '@/lib/utils';
 
 import { NavUser } from '@/components/NavUser';
 import {
@@ -36,6 +36,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+
+function VeilLogo({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path d="M4 4L12 20L20 4" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { toggleSidebar, state } = useSidebar();
@@ -149,12 +157,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuItem>
               <div className="flex items-center justify-between w-full px-1.5">
                 <a href="/dashboard" className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/20">
-                    <Database className="w-5 h-5 text-primary" />
-                  </div>
-                  <span className="text-base font-bold bg-gradient-to-r from-primary to-cyan-400 bg-clip-text text-transparent">
-                    CyborgDB
-                  </span>
+                  <VeilLogo className="w-5 h-5" />
+                  <span className="text-sm font-semibold tracking-wider">VEIL</span>
                 </a>
                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={toggleSidebar}>
                   <PanelLeftClose className="h-4 w-4" />
