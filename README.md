@@ -17,6 +17,7 @@
 ## Screenshots
 
 <div align="center">
+<img src="screenshots/img5_final.png" alt="Final Response with Document Viewer" width="800" />
 
 ### Document Upload & Processing
 <img src="screenshots/img1_documents_upload.png" alt="Document Upload" width="800" />
@@ -104,7 +105,7 @@ Documents are converted to encrypted chunks and stored as encrypted vectors. Eve
 - **Ranked context retrieval** with relevance scoring
 
 ### Real-Time Chat Interface
-- **Streaming responses** from Gemini 2.5 Flash
+- **Streaming responses** from llm
 - **Session-based conversations** with full history
 - **Inline citations** linking directly to source pages
 - **Chunk viewer** for examining exact source text
@@ -132,7 +133,7 @@ flowchart TB
         subgraph RAG["RAG Orchestration Layer"]
             IS["Ingestion Service<br/>PDF→MD, Chunking, Embedding"]
             RS["Retrieval Service<br/>Dynamic K, Multi-doc, Ranking"]
-            GS["Generation Service<br/>Gemini 2.5 Flash, Streaming"]
+            GS["Generation Service<br/>LLM, Streaming"]
         end
         
         subgraph Cyborg["CyborgDB Layer - Encrypted"]
@@ -146,7 +147,7 @@ flowchart TB
         PP[PDF Parsing with OCR]
         PM[Page Marker Injection]
         MF[Multi-format Support]
-        GV[Gemini Vision for Images]
+        GV[Multimodal LLM for Images]
     end
 
     subgraph Ollama["Ollama - Local Embeddings"]
@@ -175,7 +176,7 @@ sequenceDiagram
     participant P as Python Service
     participant O as Ollama
     participant C as CyborgDB
-    participant G as Gemini
+    participant G as LLM
 
     U->>F: Upload Document
     F->>B: POST /upload
@@ -265,8 +266,6 @@ VEIL is designed to run **completely air-gapped** for maximum security. All serv
 - **Backend**: Express API (local)
 - **Frontend**: Next.js UI (local)
 
-The only external call is to the Gemini API for chat generation, which can be replaced with local Ollama models for 100% air-gapped operation.
-
 ### Why Local Matters for Journalists
 
 | Concern | Cloud Solution | VEIL Local |
@@ -283,12 +282,10 @@ The only external call is to the Gemini API for chat generation, which can be re
 ### Prerequisites
 - Docker & Docker Compose
 - Node.js 20+ (for development)
-- Google Gemini API key
 
 ### 1. Clone & Configure
 
 Clone the repository and create your environment file with the required configuration:
-- `GOOGLE_GENAI_API_KEY`: Your Gemini API key
 - `ENCRYPTION_KEY`: A base64-encoded 32-byte key for CyborgDB encryption
 - `DATABASE_URL`: PostgreSQL connection string
 
@@ -314,7 +311,7 @@ For local development, run the backend, frontend, and Python service separately 
 | **Backend** | Express 5, TypeScript, Prisma ORM |
 | **Vector DB** | CyborgDB (encrypted) |
 | **Embeddings** | Ollama + nomic-embed-text (768-dim) |
-| **LLM** | Google Gemini 2.5 Flash |
+| **LLM** | Ollama - Llama 4 Maverick |
 | **Document Parsing** | FastAPI + MarkItDown + PyMuPDF |
 | **Database** | PostgreSQL 16 |
 | **Auth** | JWT + Google OAuth |
