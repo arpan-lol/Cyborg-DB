@@ -6,7 +6,7 @@
   
   [![Live Demo](https://img.shields.io/badge/demo-live-brightgreen?style=for-the-badge)](https://cyborg.arpantaneja.dev/)
   [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
-  [![CyborgDB](https://img.shields.io/badge/Powered%20by-CyborgDB-purple?style=for-the-badge)](https://cyborgdb.ai)
+  [![CyborgDB](https://img.shields.io/badge/Powered%20by-CyborgDB-purple?style=for-the-badge)](https://cyborgdb.co)
   
   [Live Demo](https://cyborg.arpantaneja.dev/) • [Features](#features) • [Architecture](#technical-architecture) • [Quick Start](#quick-start)
 
